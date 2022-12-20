@@ -53,26 +53,26 @@ return [
     */
 
     // local
-    // 'url' => env('APP_URL', 'http://127.0.0.1:9999/'),
-    // 'ES_url' => env('ELASTICSEARCH_HOST', 'http://localhost:9200'),
-    // 'FE_url' => env('APP_URL_FE', 'http://127.0.0.1:8000/'),
-    // 'BE_url' => env('APP_URL_BE', 'http://127.0.0.1:9999/'),
-    // 'asset_url' => env('ASSET_URL', null),
-    // 'api_htspace' => env('api_htspace', 'https://bristars.bri.co.id/bristars/app/check'),
-    // 'api_auth_bristar' => env('api_auth_bristar', 'https://api.bristars.bri.co.id/auth/oauth2/clientCredentials'),
-    // 'api_detail_pekerja_bristar' => env('api_auth_bristar', 'https://api.bristars.bri.co.id/api/oauth2/pekerja/getDetailPekerja/readable'),
-    // 'api_app_id' => env('API_APP_ID', 197), //int
+    'url' => env('APP_URL', 'http://127.0.0.1:9999/'),
+    'ES_url' => env('ELASTICSEARCH_HOST', 'http://localhost:9200'),
+    'FE_url' => env('APP_URL_FE', 'http://127.0.0.1:8000/'),
+    'BE_url' => env('APP_URL_BE', 'http://127.0.0.1:9999/'),
+    'asset_url' => env('ASSET_URL', null),
+    'api_htspace' => env('api_htspace', 'https://bristars.bri.co.id/bristars/app/check'),
+    'api_auth_bristar' => env('api_auth_bristar', 'https://api.bristars.bri.co.id/auth/oauth2/clientCredentials'),
+    'api_detail_pekerja_bristar' => env('api_auth_bristar', 'https://api.bristars.bri.co.id/api/oauth2/pekerja/getDetailPekerja/readable'),
+    'api_app_id' => env('API_APP_ID', 197), //int
 
     // dev
-     'url' => env('APP_URL', 'http://172.18.137.235/'),
-     'ES_url' => env('ELASTICSEARCH_HOST', 'http://localhost:9200'),
-     'FE_url' => env('APP_URL_FE', 'http://172.18.137.234/briknow/'),
-     'BE_url' => env('APP_URL_BE', 'http://172.18.137.235/'),
-     'asset_url' => env('ASSET_URL', null),
-     'api_htspace' => env('api_htspace', 'http://10.35.65.113/bristars/app/check'),
-     'api_auth_bristar' => env('api_auth_bristar', 'http://10.35.65.88/bristars_api/auth/oauth2/clientCredentials'),
-     'api_detail_pekerja_bristar' => env('api_detail_pekerja_bristar', 'http://10.35.65.88/bristars_api/api/oauth2/pekerja/getDetailPekerja/readable'),
-     'api_app_id' => env('API_APP_ID', 276), //int
+    //  'url' => env('APP_URL', 'http://172.18.137.235/'),
+    //  'ES_url' => env('ELASTICSEARCH_HOST', 'http://localhost:9200'),
+    //  'FE_url' => env('APP_URL_FE', 'http://172.18.137.234/briknow/'),
+    //  'BE_url' => env('APP_URL_BE', 'http://172.18.137.235/'),
+    //  'asset_url' => env('ASSET_URL', null),
+    //  'api_htspace' => env('api_htspace', 'http://10.35.65.113/bristars/app/check'),
+    //  'api_auth_bristar' => env('api_auth_bristar', 'http://10.35.65.88/bristars_api/auth/oauth2/clientCredentials'),
+    //  'api_detail_pekerja_bristar' => env('api_detail_pekerja_bristar', 'http://10.35.65.88/bristars_api/api/oauth2/pekerja/getDetailPekerja/readable'),
+    //  'api_app_id' => env('API_APP_ID', 276), //int
 
     // production
 //    'url' => env('APP_URL', 'https://briknow.bri.co.id/'),
