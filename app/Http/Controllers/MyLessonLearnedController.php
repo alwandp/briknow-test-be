@@ -14,37 +14,27 @@ class MyLessonLearnedController extends Controller
 {
     public function index(){
         if (Auth::User()->role == 0) {
-            $query = Lesson_learned::join('projects', 'projects.id', '=', 'lesson_learneds.project_id')
-                ->join('divisis', 'divisis.id', '=', 'lesson_learneds.divisi_id')
-                ->join('consultants', 'consultants.id', '=', 'lesson_learneds.consultant_id')
-                ->where('lesson_learneds.user_maker', Auth::user()->personal_number)
-                ->select(DB::raw("lesson_learneds.id, divisis.direktorat, divisis.divisi, projects.nama as project_name, consultants.nama as consultant_name,
-                        lesson_learneds.tahap, lesson_learneds.lesson_learned, lesson_learneds.detail, lesson_learneds.created_at,
-                        lesson_learneds.updated_at"))
-                ->orderBy('lesson_learneds.created_at', 'DESC')
-                ->paginate(10);
-        }elseif(Auth::User()->role == 3){
-            $query = Lesson_learned::join('projects', 'projects.id', '=', 'lesson_learneds.project_id')
-                ->join('divisis', 'divisis.id', '=', 'lesson_learneds.divisi_id')
-                ->join('consultants', 'consultants.id', '=', 'lesson_learneds.consultant_id')
-                ->select(DB::raw("lesson_learneds.id, divisis.direktorat, divisis.divisi, projects.nama as project_name, consultants.nama as consultant_name,
-                        lesson_learneds.tahap, lesson_learneds.lesson_learned, lesson_learneds.detail, lesson_learneds.created_at,
-                        lesson_learneds.updated_at"))
-                ->orderBy('lesson_learneds.created_at', 'DESC')
-                ->paginate(10);
+            $query = Project::with(['consultant','divisi','keywords', 'lesson_learned','project_managers', 'document'])->where(function($q){
+                $q->orWhere('user_maker', Auth::user()->personal_number);
+                $q->orWhere('user_checker', Auth::user()->personal_number)->where('flag_mcs', 1);
+                $q->orWhere('user_signer', Auth::user()->personal_number)->where('flag_mcs', 2);
+            })->orderBy('created_at', 'DESC')->get();
+        }elseif (Auth::User()->role == 3) {
+            $temp = [3,4,5,6];
+            $query = Project::with(['consultant','divisi','keywords', 'lesson_learned','project_managers', 'document'])->whereIn('flag_mcs', $temp)->orderBy('created_at', 'DESC')->get();
         }
+
         try {
-            $data['message']    =   'GET Berhasil.';
-            $data['data']       =   $query;
             return response()->json([
+                "message"   => "GET Berhasil",
                 "status"    => 1,
-                "data"      => $data
+                "data"      => $query
             ],200);
         } catch (\Throwable $th) {
-            $data['message']    =   'GET Gagal';
             return response()->json([
+                'message' => 'GET Gagal',
                 'status'    =>  0,
-                'data'      =>  $data
+                'data'      =>  $th
             ],200);
         }
     }
@@ -57,7 +47,12 @@ class MyLessonLearnedController extends Controller
         ]);
 
         if (Auth::User()->role == 0) {
+             $temp = [3,4,5,6];
             if (empty($request->tahap) && empty($request->divisi) && empty($request->search)){
+                $query = Project::with(['lesson_learned'])
+                    ->where('flag_mcs', 5)
+                    ->get();
+            } else if (empty($request->tahap) && empty($request->divisi) && empty($request->search)){
                 $query = Project::with(['lesson_learned'])
                     ->orWhere('user_maker', Auth::user()->personal_number)
                     ->orWhere('user_checker', Auth::user()->personal_number)->where('flag_mcs', 1)
