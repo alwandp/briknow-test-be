@@ -1,0 +1,40 @@
+
+U	php:S1131f"@Remove the useless trailing whitespaces at the end of this line.(‡ŞÔ°
+V	php:S1131Ô"@Remove the useless trailing whitespaces at the end of this line.(‡ŞÔ°
+V	php:S1131Â"@Remove the useless trailing whitespaces at the end of this line.(‡ŞÔ°
+V	php:S1131°"@Remove the useless trailing whitespaces at the end of this line.(‡ŞÔ°
+dphp:S103"KSplit this 139 characters long line (which is greater than 120 authorized).(Óæñâşÿÿÿÿ
+_php:S103\"KSplit this 161 characters long line (which is greater than 120 authorized).(£ßÖç
+_php:S103|"KSplit this 170 characters long line (which is greater than 120 authorized).(¦Ï’
+`php:S103È"KSplit this 129 characters long line (which is greater than 120 authorized).(¬İ±Ú
+_php:S103ê"KSplit this 156 characters long line (which is greater than 120 authorized).(µ«–G
+`php:S103¶"KSplit this 129 characters long line (which is greater than 120 authorized).(¬İ±Ú
+`php:S103Ø"KSplit this 125 characters long line (which is greater than 120 authorized).(†…É­
+_php:S103Ç"KSplit this 206 characters long line (which is greater than 120 authorized).(ú¾Äg
+3php:S113"'Add a new line at the end of this file.
+b	php:S1779"UReplace all non line feed end of line characters in this file "list.blade.php" by LF.
+CWeb:BoldAndItalicTagsChecka"Replace this <i> tag by <em>.( Ô¸À
+CWeb:BoldAndItalicTagsCheckd"Replace this <i> tag by <em>.(ªà·ş
+CWeb:BoldAndItalicTagsCheckh"Replace this <i> tag by <em>.(©ÃŸª
+BWeb:BoldAndItalicTagsCheckl"Replace this <i> tag by <em>.(×éùk
+CWeb:BoldAndItalicTagsCheckp"Replace this <i> tag by <em>.(•ëÑŒ
+BWeb:BoldAndItalicTagsCheckt"Replace this <i> tag by <em>.(‡œúr
+DWeb:BoldAndItalicTagsCheckÏ"Replace this <i> tag by <em>.( Ô¸À
+DWeb:BoldAndItalicTagsCheckÒ"Replace this <i> tag by <em>.(ªà·ş
+DWeb:BoldAndItalicTagsCheckÖ"Replace this <i> tag by <em>.(©ÃŸª
+CWeb:BoldAndItalicTagsCheckÚ"Replace this <i> tag by <em>.(×éùk
+DWeb:BoldAndItalicTagsCheckŞ"Replace this <i> tag by <em>.(•ëÑŒ
+CWeb:BoldAndItalicTagsCheckâ"Replace this <i> tag by <em>.(‡œúr
+DWeb:BoldAndItalicTagsCheck½"Replace this <i> tag by <em>.( Ô¸À
+DWeb:BoldAndItalicTagsCheckÀ"Replace this <i> tag by <em>.(ªà·ş
+DWeb:BoldAndItalicTagsCheckÄ"Replace this <i> tag by <em>.(©ÃŸª
+CWeb:BoldAndItalicTagsCheckÈ"Replace this <i> tag by <em>.(×éùk
+DWeb:BoldAndItalicTagsCheckÌ"Replace this <i> tag by <em>.(•ëÑŒ
+CWeb:BoldAndItalicTagsCheckĞ"Replace this <i> tag by <em>.(‡œúr
+DWeb:BoldAndItalicTagsCheck«"Replace this <i> tag by <em>.( Ô¸À
+DWeb:BoldAndItalicTagsCheck®"Replace this <i> tag by <em>.(ªà·ş
+DWeb:BoldAndItalicTagsCheck²"Replace this <i> tag by <em>.(©ÃŸª
+CWeb:BoldAndItalicTagsCheck¶"Replace this <i> tag by <em>.(×éùk
+DWeb:BoldAndItalicTagsCheckº"Replace this <i> tag by <em>.(•ëÑŒ
+CWeb:BoldAndItalicTagsCheck¾"Replace this <i> tag by <em>.(‡œúr
+IWeb:BoldAndItalicTagsCheckÈ"Replace this <i> tag by <em>.(°¥şìúÿÿÿÿ

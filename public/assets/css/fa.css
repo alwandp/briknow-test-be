@@ -1,0 +1,7 @@
+.pencarian-card{
+    padding-top: 200px !important;
+}
+.overlay{
+    background-image: url('../img/bg/jumbotron-bg.png');
+    mix-blend-mode: overlay;
+}

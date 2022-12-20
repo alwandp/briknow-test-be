@@ -1,0 +1,151 @@
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+    background-color: #0E3984; 
+}
+
+.panel{
+    width: 50%;
+}
+
+.log-form{
+    padding : 20px 30px !important;
+}
+
+.control-label{
+    font-weight: 500 !important;
+    font-size : 15px !important;
+}
+
+#bot{
+    position: absolute;
+    bottom  : 0%;
+    right   : 0%;
+    width   : 60%;
+}
+#bot2{
+    display:none;
+}
+
+#top{
+    position: absolute;
+    top     : 0%;
+    left    : 0%;
+    width   : 20%;
+}
+
+.mob-mar{
+    margin-bottom   : 0px;
+}
+
+#captcha{
+    height: 35px !important;
+}
+
+@media only screen and (max-width: 1025px) {
+    #top{
+        position: absolute;
+        top     : 0%;
+        left    : 0%;
+        width   : 30%;
+    }
+}
+
+
+@media only screen and (max-width: 990px) {
+    .panel{
+        width: 440px;
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    .log-form{
+        padding : 20px 30px !important;
+        margin-top: 2px;
+    }
+    .mob-mar{
+        margin-top      : 2.25em;
+        margin-bottom   : 0px;
+    }
+    #top{
+        position: absolute;
+        top     : 0%;
+        left    : 0%;
+        width   : 50%;
+    }
+
+    #bot{
+        position: absolute;
+        bottom  : 0%;
+        right   : 0%;
+        width   : 70%;
+    }
+
+    #bot2{
+        display:none;
+    }
+}
+
+@media only screen and (max-width: 767px) {
+    .log-form{
+        padding : 20px 30px !important;
+        margin-top: 2px;
+    }
+    .mob-mar{
+        margin-top      : 2.25em;
+        margin-bottom   : 2.5em;
+    }
+
+    .img-proj{
+        margin-top      : 6em;
+    }
+
+    #top{
+        position: absolute;
+        top     : 0%;
+        left    : 0%;
+        width   : 50%;
+    }
+
+    #bot{
+        display:none;
+    }
+
+    #bot2{
+        position: absolute;
+        bottom  : 0%;
+        right   : 0%;
+        width   : 90%;
+        display :block;
+    }
+}
+
+@media only screen and (max-width: 425px) {
+    #top{
+        position: absolute;
+        top     : 0%;
+        left    : 0%;
+        width   : 65%;
+    }
+
+    #bot{
+        display:none;
+    }
+
+    #bot2{
+        position: absolute;
+        bottom  : 0%;
+        right   : 0%;
+        width   : 90%;
+        display :block;
+    }
+}

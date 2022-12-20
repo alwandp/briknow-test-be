@@ -1,0 +1,492 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Divisi;
+use App\Restriction;
+use App\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+
+class ManageUserController extends Controller
+{
+    public function index()
+    {
+        $query = User::where('role','3')->get();
+        $self  = Auth::User();
+
+        try {
+            $data['message']    =   'GET Berhasil.';
+            $data['data']       =   $query;
+            $data['self']       =   $self;
+            return response()->json([
+                "status"    => 1,
+                "data"      => $data,
+            ],200);
+        } catch (\Throwable $th) {
+            $data['message']    =   'GET Gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $data
+            ],200);
+        }
+    }
+
+    public function listuser($search = '*'){
+      try {
+        $search = str_replace("_"," ",$search);
+        
+        if ($search ==  '*') {
+            $data = User::where('role','3')->paginate(10);
+        }else{
+            $data = User::where('name','like','%'.$search.'%')->where('role','3')->paginate(10);
+        }
+        // return response()->json($data);
+        
+        $view       = view('manage_user.list',compact('data'))->render();
+        $paginate   = view('manage_user.paginate',compact('data'))->render();
+
+        $resp['message']    =   'GET Berhasil.';
+        $resp['html']       =   $view;
+        $resp['paginate']   =   $paginate;
+        return response()->json([
+            "status"    => 1,
+            "data"      => $resp,
+        ],200);
+      } catch (\Throwable $th) {
+        $data['message']    =   'GET Gagal';
+        return response()->json([
+            'status'    =>  0,
+            'data'      =>  $data
+        ],200);
+      }
+    }
+
+    public function detail($id)
+    {
+        $query = User::select('role')->find($id); //dibatasi yg dikirim ke fe hanya jenis user dan hak akses*
+
+        try {
+            $data['message']    =   'GET Berhasil.';
+            $data['data']       =   $query;
+            return response()->json([
+                "status"    => 1,
+                "data"      => $data,
+            ],200);
+        } catch (\Throwable $th) {
+            $data['message']    =   'GET Gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $data
+            ],200);
+        }
+    }
+
+    public function edit($id)
+    {
+        $req = request()->all();
+        $q = User::find($id);
+        
+        $up['role'] = $req['role'][0];
+        try {
+            $q->update($up);
+
+            $data['message']    =   'Edit Berhasil.';
+            return response()->json([
+                "status"    => 1,
+                "data"      => $data,
+            ],200);
+
+        } catch (\Throwable $th) {
+            $data['message']    =   'Edit Gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $data
+            ],200);
+        }
+    }
+
+    public function hapus($id)
+    {
+        try {
+            $q = User::find($id);
+            $up['role'] = 0;
+            $q->update($up);
+
+            $data['message']    =   'Delete Berhasil.';
+            return response()->json([
+                "status"    => 1,
+                "data"      => $data,
+            ],200);
+
+        } catch (\Throwable $th) {
+            $data['message']    =   'Delete Gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $data
+            ],200);
+        }
+    }
+
+    public function searchpn(){
+        $validator = Validator::make(request()->all(), [
+            'pn'         => "required",
+        'token_bri'  => "required",
+        ]);
+
+        // handle jika tidak terpenuhi
+        if ($validator->fails()) {
+            $data_error['message'] = $validator->errors();
+            return response()->json([
+                'status' => 0,
+                'data'  => $data_error
+            ], 400);            
+        }
+
+        // dummy
+        // $res['costcenter']      =   'PS19014';
+        // $res['nama']            =   'free';
+        // $res['personalnumber']  =   '782621';
+
+        // return response()->json([
+        //     "status"    =>  1,
+        //     "data"      =>  $res
+        // ],200);
+
+        try {
+            // -----------------------------
+            // tempat API Detail Proyek
+            // -----------------------------
+            $access_token   =   request()->token_bri;
+            $ch2 = curl_init();
+            $headers  = [
+                        'Content-Type: application/json',
+                        'Accept: application/json',
+                        "Authorization: Bearer $access_token",
+                    ];
+            $postData = [
+                'pernr'     => request()->pn,
+            ];
+            curl_setopt($ch2, CURLOPT_URL,config('app.api_detail_pekerja_bristar'));
+            curl_setopt($ch2, CURLOPT_POST, 1);
+            curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER , false);
+            curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($postData));
+            curl_setopt($ch2, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+            $result2     = curl_exec ($ch2);
+            $hasil2      = json_decode($result2);
+            //return response()->json([
+            //	'token' => $access_token,
+            //	'api' => config('app.api_detail_pekerja_bristar'),
+            //	'cek' => $hasil2,
+            //]);
+        
+            // dummy
+            // $res['costcenter']      =   11111111;
+            // $res['nama']            =   'alfarel rizqi';
+            // $res['personalnumber']  =   11111111;
+
+            // return response()->json([
+            //     "status"    =>  1,
+            //     "data"      =>  $res
+            // ],200);
+
+            if (isset($hasil2->responseData->COST_CENTER)) {
+                $res['costcenter']      =   $hasil2->responseData->COST_CENTER;
+                $res['nama']            =   $hasil2->responseData->NAMA;
+                $res['personalnumber']  =   request()->pn;
+
+                return response()->json([
+                    "status"    =>  1,
+                    "data"      =>  $res
+                ],200);
+            }else{
+                $msg['message'] =   'Akun Tidak Ditemukan';
+                return response()->json([
+                    "status"    =>  0,
+                    "data"      =>  $msg
+                ],200);
+            }
+        } catch (\Throwable $th) {
+            $msg['message'] =   'Something Problem';
+            return response()->json([
+                "status"    =>  0,
+                "data"      =>  $msg
+            ],200);
+        }
+    }
+
+    public function searchkcs(){
+        $validator = Validator::make(request()->all(), [
+            'pn'         => "required",
+            'token_bri'  => "required",
+        ]);
+
+        // handle jika tidak terpenuhi
+        if ($validator->fails()) {
+            $data_error['message'] = $validator->errors();
+            return response()->json([
+                'status' => 0,
+                'data'  => $data_error
+            ], 400);            
+        }
+
+        try {
+
+            // handle bukan dirinya sendiri
+            if ((int)request()->pn == Auth::User()->personal_number) {
+                $msg['message'] =   'Anda Merupakan Maker';
+                return response()->json([
+                    "status"    =>  0,
+                    "data"      =>  $msg
+                ],200);
+            }
+
+            // handle bukan dirinya sendiri
+            $cekadminkah = User::where('personal_number', (int)request()->pn)->where('role',3)->count();
+            if ($cekadminkah > 0) {
+                $msg['message'] =   'Tidak Bisa Memilih Role Admin';
+                return response()->json([
+                    "status"    =>  0,
+                    "data"      =>  $msg
+                ],200);
+            }
+
+            // dummy
+            // $res['costcenter']      =   'PS19014';
+            // $res['nama']            =   'KCS';
+            // $res['personalnumber']  =   '89803749';
+
+            // return response()->json([
+            //     "status"    =>  1,
+            //     "data"      =>  $res
+            // ],200);
+
+            // -----------------------------
+            // tempat API Detail Proyek
+            // -----------------------------
+            $access_token   =   request()->token_bri;
+            $ch2 = curl_init();
+            $headers  = [
+                        'Content-Type: application/json',
+                        'Accept: application/json',
+                        "Authorization: Bearer $access_token",
+                    ];
+            $postData = [
+                'pernr'     => request()->pn,
+            ];
+            curl_setopt($ch2, CURLOPT_URL,config('app.api_detail_pekerja_bristar'));
+            curl_setopt($ch2, CURLOPT_POST, 1);
+            curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER , false);
+            curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($postData));
+            curl_setopt($ch2, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+            $result2     = curl_exec ($ch2);
+            $hasil2      = json_decode($result2);
+            if (isset($hasil2->responseData->COST_CENTER)) {
+                $res['costcenter']      =   $hasil2->responseData->COST_CENTER;
+                $res['nama']            =   $hasil2->responseData->NAMA;
+                $res['personalnumber']  =   request()->pn;
+
+                return response()->json([
+                    "status"    =>  1,
+                    "data"      =>  $res
+                ],200);
+            }else{
+                $msg['message'] =   'Akun Tidak Ditemukan';
+                return response()->json([
+                    "status"    =>  0,
+                    "data"      =>  $msg
+                ],200);
+            }
+        } catch (\Throwable $th) {
+            $msg['message'] =   'Something Problem';
+            return response()->json([
+                "status"    =>  0,
+                "data"      =>  $msg
+            ],200);
+        }
+    }
+
+    public function searchma(){
+        $validator = Validator::make(request()->all(), [
+            'pn'         => "required",
+            'token_bri'  => "required",
+        ]);
+
+        // handle jika tidak terpenuhi
+        if ($validator->fails()) {
+            $data_error['message'] = $validator->errors();
+            return response()->json([
+                'status' => 0,
+                'data'  => $data_error
+            ], 400);            
+        }
+
+        try {
+            // handle bukan dirinya sendiri
+            $cekadminkah = User::where('personal_number', (int)request()->pn)->where('role',3)->count();
+            if ($cekadminkah > 0) {
+                $msg['message'] =   'Tidak Bisa Memilih Role Admin';
+                return response()->json([
+                    "status"    =>  0,
+                    "data"      =>  $msg
+                ],200);
+            }
+
+            // dummy
+            // $res['costcenter']      =   'PS19014';
+            // $res['nama']            =   'MA';
+            // $res['personalnumber']  =   '89803749';
+
+            // return response()->json([
+            //     "status"    =>  1,
+            //     "data"      =>  $res
+            // ],200);
+
+            // -----------------------------
+            // tempat API Detail Proyek
+            // -----------------------------
+            $access_token   =   request()->token_bri;
+            $ch2 = curl_init();
+            $headers  = [
+                        'Content-Type: application/json',
+                        'Accept: application/json',
+                        "Authorization: Bearer $access_token",
+                    ];
+            $postData = [
+                'pernr'     => request()->pn,
+            ];
+            curl_setopt($ch2, CURLOPT_URL,config('app.api_detail_pekerja_bristar'));
+            curl_setopt($ch2, CURLOPT_POST, 1);
+            curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER , false);
+            curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($postData));
+            curl_setopt($ch2, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+            $result2     = curl_exec ($ch2);
+            $hasil2      = json_decode($result2);
+            if (isset($hasil2->responseData->COST_CENTER)) {
+                $res['costcenter']      =   $hasil2->responseData->COST_CENTER;
+                $res['nama']            =   $hasil2->responseData->NAMA;
+                $res['personalnumber']  =   request()->pn;
+
+                return response()->json([
+                    "status"    =>  1,
+                    "data"      =>  $res
+                ],200);
+            }else{
+                $msg['message'] =   'Akun Tidak Ditemukan';
+                return response()->json([
+                    "status"    =>  0,
+                    "data"      =>  $msg
+                ],200);
+            }
+        } catch (\Throwable $th) {
+            $msg['message'] =   'Something Problem';
+            return response()->json([
+                "status"    =>  0,
+                "data"      =>  $msg
+            ],200);
+        }
+    }
+
+    public function admin_create(){
+        $validator = Validator::make(request()->all(), [
+            'pn'         => "required",
+            'token_bri'  => "required",
+        ]);
+
+        // handle jika tidak terpenuhi
+        if ($validator->fails()) {
+            $data_error['message'] = $validator->errors();
+            return response()->json([
+                'status' => 0,
+                'data'  => $data_error
+            ], 400);            
+        }
+        
+        try {
+            // cek existing in database
+            $cek    =   User::where('personal_number', request()->pn)->first();
+
+            if (isset($cek->personal_number)) {
+                // jadikan admin
+                $renew['role']  =   3;
+                $cek->update($renew);
+
+                // create Admin success
+                $msg['message'] =   'Create Admin Berhasil';
+                return response()->json([
+                    "status"    =>  1,
+                    "data"      =>  $msg
+                ],200);
+            }else{
+                // -----------------------------
+                // tempat API Detail Proyek
+                // -----------------------------
+                $access_token   =   request()->token_bri;
+                $ch2 = curl_init();
+                $headers  = [
+                            'Content-Type: application/json',
+                            'Accept: application/json',
+                            "Authorization: Bearer $access_token",
+                        ];
+                $postData = [
+                    'pernr'     => request()->pn,
+                ];
+                curl_setopt($ch2, CURLOPT_URL,config('app.api_detail_pekerja_bristar'));
+                curl_setopt($ch2, CURLOPT_POST, 1);
+                curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER , false);
+                curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($postData));
+                curl_setopt($ch2, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+                $result2     = curl_exec ($ch2);
+                $hasil2      = json_decode($result2);
+                if (isset($hasil2->responseData->COST_CENTER)) {
+                    // save data
+                    $ResponseCostcenter = $hasil2->responseData->COST_CENTER;
+                    $Responsenama       = $hasil2->responseData->NAMA;
+
+                    // cek
+                    if ($ResponseCostcenter <> null) {
+                        $dataDivisi = Divisi::where('cost_center', $ResponseCostcenter)->first();
+                        // add user
+                        $new                    = new User();
+                        $new->name              = $Responsenama??'User';
+                        $new->personal_number   = request()->pn;
+                        $new->username          = $Responsenama??'User';
+                        $new->email             = str_replace(" ",".",$Responsenama)."@gmail.com";
+                        $new->role              = 3;
+                        $new->divisi            = isset($dataDivisi->id)? $dataDivisi->id : 11111111;
+                        $new->last_login_at     = Carbon::now();
+                        $new->xp                = 0;
+                        $new->avatar_id         = 1;
+                        $new->save();
+
+                        // create Admin success
+                        $msg['message'] =   'Create Admin Berhasil';
+                        return response()->json([
+                            "status"    =>  1,
+                            "data"      =>  $msg
+                        ],200);
+                    }
+                }
+
+                // failed create Admin
+                $msg['message'] =   'Create Admin Gagal';
+                return response()->json([
+                    "status"    =>  0,
+                    "data"      =>  $msg
+                ],200);
+            }
+        } catch (\Throwable $th) {
+            $msg['message'] =   'Something Problem';
+            return response()->json([
+                "status"    =>  0,
+                "data"      =>  $msg
+            ],200);
+        }
+    }
+}
