@@ -49,7 +49,7 @@ class DashboardController extends Controller
             $qMostUsUk = DB::table('search_logs')
             ->join('users', 'users.id', '=', 'search_logs.user_id')
             ->join('projects', 'projects.id', '=', 'search_logs.project_id')
-            ->select('user_id',DB::raw('count(*) as total'))
+            ->select('user_id', 'users.name',DB::raw('count(*) as total'))
             ->where('flag_mcs', 5)
             ->groupBy('user_id')
             ->orderBy('total','desc')
