@@ -382,11 +382,11 @@ class DashboardController extends Controller
                 ->select(DB::raw('SUM(views) as total'))->first();
             $views = CommunicationSupport::without(['attach_file', 'project'])
                 ->select(DB::raw('id, title, views, thumbnail, slug'))
-                ->where('type_file', $value->type_file)->where('status', '!=', 'deleted')
+                ->where('type_file', $value->type_file)->where('status', '=', 'publish')
                 ->orderby('views','desc')->take(5)->get();
             $download = CommunicationSupport::without(['attach_file', 'project'])
                 ->select(DB::raw('id, title, downloads, thumbnail, slug'))
-                ->where('type_file', $value->type_file)->where('status', '!=', 'deleted')
+                ->where('type_file', $value->type_file)->where('status', '=', 'publish')
                 ->orderby('downloads','desc')->take(5)->get();
 
             $data[$key]['tipe']             = $value->type_file;
@@ -429,15 +429,15 @@ class DashboardController extends Controller
             $strategic = [];
             foreach($types as $key => $value){
                 $sum = CommunicationSupport::without(['attach_file', 'project'])->where('project_id', $values->id)
-                    ->where('type_file', $value->type_file)->where('status', '!=', 'deleted')
+                    ->where('type_file', $value->type_file)->where('status', '=', 'publish')
                     ->select(DB::raw('SUM(views) as total'))->first();
                 $views = CommunicationSupport::without(['attach_file', 'project'])->where('project_id', $values->id)
                     ->select(DB::raw('id, title, views, thumbnail, slug'))
-                    ->where('type_file', $value->type_file)->where('status', '!=', 'deleted')
+                    ->where('type_file', $value->type_file)->where('status', '=', 'publish')
                     ->orderby('views','desc')->take(5)->get();
                 $download = CommunicationSupport::without(['attach_file', 'project'])->where('project_id', $values->id)
                     ->select(DB::raw('id, title, downloads, thumbnail, slug'))
-                    ->where('type_file', $value->type_file)->where('status', '!=', 'deleted')
+                    ->where('type_file', $value->type_file)->where('status', '=', 'publish')
                     ->orderby('downloads','desc')->take(5)->get();
 
                 $strategic[$key]['tipe']             = $value->type_file;
@@ -483,7 +483,7 @@ class DashboardController extends Controller
             $views = Implementation::without(['attach_file', 'project', 'project_managers', 'userchecker', 'usersigner', 'consultant', 'piloting', 'rollout', 'sosialisasi'])
                 ->join('projects', 'projects.id', '=', 'implementation.project_id')
                 ->select(DB::raw('implementation.id as implementation_id, implementation.title, implementation.views,
-                 projects.id as project_id, projects.nama as nama_project, projects.thumbnail, projects.slug'))
+                 projects.id as project_id, projects.nama as nama_project, projects.thumbnail, implementation.slug'))
                 ->whereHas($value->tipe)->where('implementation.status', '!=', 'deleted')
                 ->orderby('implementation.views','desc')->take(5)->get();
 

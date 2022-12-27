@@ -169,7 +169,9 @@ class HomeController extends Controller
                 $object->namaproject = $key->nama??'-';
                 $object->jumlahpengunjung = $key->search_log_count;
                 $object->url = config('app.FE_url').'project/'.$key->slug;
-                $data[] = $object;
+		if ($object->jumlahpengunjung > 0) {
+		    $data[] = $object;
+		}
             }
 
             $out['data'] = $data;
@@ -660,6 +662,7 @@ class HomeController extends Controller
                 ->select(DB::raw("projects.nama, sum(communication_support.views) as jml, 
                 CONCAT_WS('/', '{$urlFE}', projects.slug) AS url"))
                 ->where('projects.flag_mcs', 5)
+		->where('communication_support.views', '>', 0)
                 ->groupBy("projects.nama")
                 ->groupBy("url")
                 ->orderBy('jml', 'DESC')
@@ -698,6 +701,7 @@ class HomeController extends Controller
             ->select(DB::raw("type_file, sum(views) as jml, 
                 CONCAT_WS('/', '{$urlFE}', type_file) AS url"))
             ->where('status', 'publish')
+	    ->where('views', '>', 0)
             ->groupBy("type_file")
             ->groupBy("url")
             ->orderBy('jml', 'DESC')

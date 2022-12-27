@@ -492,10 +492,9 @@ class CommunicationSupportController extends Controller {
                 ], 400);
             }
 
- 	    if ($datas['status'] == 'publish'){
-           	$updateDetails['views'] = $datas->views + 1;
-            	$model->update($updateDetails);
-	    }
+            
+$updateDetails['views'] = $datas->views + 1;
+            $model->update($updateDetails);
 
             $data_upd = $model->first();
 

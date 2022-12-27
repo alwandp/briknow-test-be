@@ -128,8 +128,8 @@ class ProjectController extends Controller
             $query = Project::with(['lesson_learned'])->get();
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort)){
             $query = Project::with(['lesson_learned'])->orderBy('nama', $sort)->get();
-        } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && !empty($year)){
-            $query = Project::with(['lesson_learned'])->whereIn(EXTRACT(YEAR_MONTH, 'tanggal_mulai')) ->get();
+        } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && empty($year)){
+            $query = Project::whereHas('lesson_learned', $tahap)->get();
         } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort)) {
             $query = Project::whereHas('lesson_learned', $tahap)->orderBy('nama', $sort)->get();
         } elseif (!empty($tahp) && !empty($div) && empty($con) && empty($key) && empty($sort)) {
