@@ -117,7 +117,7 @@ class ProjectController extends Controller
             $q->whereIn('consultant_id', $arr_consul);
         };
 
-        $arr_tahun = explode('-', $year);
+        $arr_tahun = explode(',', $year);
 
         $search = function ($q) use ($key) {
             $q->where('nama', 'LIKE', '%'.$key.'%');
@@ -128,6 +128,8 @@ class ProjectController extends Controller
             $query = Project::with(['lesson_learned'])->get();
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort)){
             $query = Project::with(['lesson_learned'])->orderBy('nama', $sort)->get();
+        } elseif (empty($tahap) && empty($div) && empty($con) && empty($key) && empty($sort) && !empty($year)) {
+            $query = Project::whereHas('lesson_learned')->where()->get();
         } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && empty($year)){
             $query = Project::whereHas('lesson_learned', $tahap)->get();
         } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort)) {
