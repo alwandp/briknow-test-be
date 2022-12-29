@@ -42,7 +42,7 @@ class MyLessonLearnedController extends Controller
                 $key = $request->search;
                 $query = Project::whereHas('lesson_learned', function ($q) use ($key) {
                     $q->where('user_maker', Auth::user()->personal_number);
-                    $q->where('lesson_learned', 'LIKE' ,'%'.$key.'%');
+                    $q->where('nama', 'LIKE' ,'%'.$key.'%');
                     $q->where('flag_mcs', 5);
                 })
                 ->orderBy('created_at', 'DESC')->get();
@@ -77,7 +77,7 @@ class MyLessonLearnedController extends Controller
                 $key = $request->search;
                 $query = Project::whereHas('lesson_learned', function ($q) use ($key) {
                     $q->where('user_maker', Auth::user()->personal_number);
-                    $q->where('lesson_learned', 'LIKE' ,'%'.$key.'%');
+                    $q->where('nama', 'LIKE' ,'%'.$key.'%');
                     $q->where('flag_mcs', 5);
                 })
                 ->orderBy('created_at', 'DESC')->get();
@@ -130,7 +130,7 @@ class MyLessonLearnedController extends Controller
             if(!empty($request->search)){
                 $key = $request->search;
                 $query = Project::whereHas('lesson_learned', function ($q) use ( $key) {
-                    $q->where('lesson_learned', 'LIKE', '%'.$key.'%');
+                    $q->where('nama', 'LIKE', '%'.$key.'%');
                     $q->where('flag_mcs', 5);
                 })->get();
             }
@@ -157,7 +157,7 @@ class MyLessonLearnedController extends Controller
             if(!empty($request->search)){
                 $key = $request->search;
                 $query = Project::whereHas('lesson_learned', function ($q) use ( $key) {
-                    $q->where('lesson_learned', 'LIKE', '%'.$key.'%');
+                    $q->where('nama', 'LIKE', '%'.$key.'%');
                     $q->where('flag_mcs', 5);
                 })->get();
             }
