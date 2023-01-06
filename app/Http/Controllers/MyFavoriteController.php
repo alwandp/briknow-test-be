@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\CommunicationSupport;
+use App\FavoriteImplementation;
+use App\Implementation;
 use App\User;
 use Auth;
 use Illuminate\Http\Request;
@@ -138,9 +140,15 @@ class MyFavoriteController extends Controller
 
     public function fav_com($sort = "asc")
     {
-        $query = CommunicationSupport::whereHas('favorite_com', function($q) {
+        $query1 = CommunicationSupport::whereHas('favorite_com', function($q) {
             $q->where('user_id', Auth::user()->id);
         })->orderBy('title', $sort)->get();
+
+	$query2 = Implementation::whereHas('favorite_implementation', function($q) {
+	    $q->where('user_id', Auth::user()->id);
+	})->orderBy('title', $sort)->get();
+
+	$query = $query1->merge($query2);
 
         try {
             $data['data']    =   $query;

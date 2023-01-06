@@ -391,6 +391,7 @@ class ManageProjectController extends Controller
     {
         try {
             $query = Project::find($id);
+	    $query->lesson_learned()->delete();
             $query->delete();
 
             DB::table('projects')->update(array('flag_es' => NULL));

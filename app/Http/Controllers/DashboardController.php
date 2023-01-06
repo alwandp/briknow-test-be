@@ -133,8 +133,8 @@ class DashboardController extends Controller
             ->orderBy('jumlah_project','desc')
             ->get();
 
-            $querycon->map(function ($key, $value) {
-                $key->url =  isset($key->url) ? config('app.FE_url').'consultant/'.$key->url : config('app.FE_url').'dashboard/'.'#';
+            $querycon->map(function ($key) {
+                $key->url = $key->url;
                 $key->nama_consultant =  $key->nama_consultant;
             });
 
@@ -147,8 +147,8 @@ class DashboardController extends Controller
             ->orderBy('jumlah_project','desc')
             ->get();
 
-            $querydiv->map(function ($key, $value) {
-                $key->url =  isset($key->url) ? config('app.FE_url').'divisi/'.$key->url : config('app.FE_url').'dashboard/'.'#';
+            $querydiv->map(function ($key) {
+                $key->url = $key->url;
                 $key->nama_divisi =  $key->nama_divisi;
             });
 
@@ -330,7 +330,7 @@ class DashboardController extends Controller
         // ->select('nama')->groupBy('nama')
         $query = Keywords::with(['project' => function($q){
             $q->where('flag_mcs',5);
-        }])->select('nama')->groupBy('nama')->withCount('keyword_log')->orderby('keyword_log_count','desc')->limit(10)->get();
+        }])->select('nama')->groupBy('nama')->withCount('keyword_log')->orderby('keyword_log_count','desc')->limit(3)->get();
 
         $namas = [];
         foreach ($query as $q) {

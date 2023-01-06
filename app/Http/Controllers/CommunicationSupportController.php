@@ -103,6 +103,8 @@ class CommunicationSupportController extends Controller {
         try {
             $model = Project::whereHas('communication_support', function($q) {
                 $q->where('status', 'publish');
+            })->orWhereHas('implementation', function($q) {
+                $q->where('status', 'publish');
             });
 
             $order = 'asc';
@@ -127,21 +129,38 @@ class CommunicationSupportController extends Controller {
                 $where_in = explode(",",$request->get('divisi'));
                 $model->whereIn('divisi_id', $where_in);
             }
+
             if($request->get('tahap')) {
                 if ($request->get('tahap') == 'piloting') {
-                    $model->whereHas('implementation', function ($q) {
+                    $piloting = Project::whereHas('implementation', function ($q) {
+                        $q->where('status', 'publish');
                         $q->whereNotNull('desc_piloting');
                     });
+
+		    $model = $piloting;
                 } else if ($request->get('tahap') == 'roll-out') {
-                    $model->whereHas('implementation', function ($q) {
+                    $rollOut = Project::whereHas('implementation', function ($q) {
+                        $q->where('status', 'publish');
                         $q->whereNotNull('desc_roll_out');
                     });
+
+		    $model = $rollOut;
                 } else if ($request->get('tahap') == 'sosialisasi') {
-                    $model->whereHas('implementation', function ($q) {
+                    $sosialisasi = Project::whereHas('implementation', function ($q) {
+                        $q->where('status', 'publish');
                         $q->whereNotNull('desc_sosialisasi');
                     });
+
+                    $model = $sosialisasi;
+                } else {
+                    $allImpl = Project::whereHas('implementation', function ($q) {
+                        $q->where('status', 'publish');
+                    });
+
+                    $model = $allImpl;
                 }
             }
+
             if($request->get('direktorat')) {
                 $dir = $request->get('direktorat');
                 $dir = str_replace('-', ' ', $dir);
@@ -206,29 +225,33 @@ class CommunicationSupportController extends Controller {
                 ], 400);
             }
             $data['project'] = $project;
+            $piloting = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_piloting')->orderBy('created_at', 'desc')->take(5)->get();
+            $rollOut = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_roll_out')->orderBy('created_at', 'desc')->take(5)->get();
+            $sosialisasi = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_sosialisasi')->orderBy('created_at', 'desc')->take(5)->get();
+            $data['piloting'] = $piloting;
+	    $data['roll_out'] = $rollOut;
+            $data['sosialisasi'] = $sosialisasi;
+
             $types = CommunicationSupport::where('project_id', $project->id)
                 ->where('status', 'publish')->select('type_file')->distinct()->get();
 
             $model = CommunicationSupport::where('project_id', $project->id)
                 ->where('status', 'publish');
-            $order = 'asc';
-            if($request->get('order')) {
-                $order = $request->get('order');
-            }
-            if($request->get('sort')) {
-                $model->orderBy($request->get('sort'), $order);
-            }
+
             if($request->get('search')) {
                 $model->where('title', 'like','%'.$request->get('search').'%');
             }
+
             if($request->get('year')) {
                 $where_in_year = explode(",",$request->get('year'));
                 $model->whereIn(DB::raw('year(created_at)'), $where_in_year);
             }
+
             if($request->get('month')) {
                 $where_in_month = explode(",",$request->get('month'));
                 $model->whereIn(DB::raw('month(created_at)'), $where_in_month);
             }
+
             if($request->get('divisi')) {
                 $where_in = explode(",",$request->get('divisi'));
                 $model->whereHas('project', function ($q) use ($where_in) {
@@ -239,10 +262,23 @@ class CommunicationSupportController extends Controller {
             $type_file = [];
             foreach($types as $r){
                 $key = array_search($r->type_file, array_column($type_list, 'id'));
-                $datas = $model->where('type_file', $r->type_file)->take(5)->get();
-                $datas_total = $model->where('type_file', $r->type_file)->count();
+                $datas_total = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->count();
                 $total = CommunicationSupport::where('project_id', $project->id)
-                    ->where('status', '!=', 'deleted')->where('type_file', $r->type_file)->count();
+                    ->where('status', 'publish')->where('type_file', $r->type_file)->count();
+
+		/* if($request->get('search')) {
+		    $datas = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->where('title', 'like','%'.$request->get('search').'%')->get();
+            	} */
+
+		if($request->get('sort')) {
+                    if ($request->get('sort') == 'title') {
+                        $datas = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->orderBy('title', 'asc')->take(5)->get();
+		    } else {
+		        $datas = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->orderBy($request->get('sort'), 'desc')->take(5)->get();
+		    }
+            	}else {
+		    $datas = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->orderBy('created_at', 'desc')->take(5)->get();
+		}
 
                 $type_list[$key]['data'] = $datas;
                 $type_list[$key]['total_data'] = $datas_total;

@@ -18,52 +18,35 @@ class LessonLearnedController extends Controller
                 'search' => 'nullable'
             ]);
 
-            if (empty($request->tahap) && empty($request->divisi) && empty($request->search)){
-                $query = Project::with(['lesson_learned'])->get();
-            }elseif (!empty($request->tahap) && empty($request->divisi) && empty($request->search)){
+            if (empty($request->tahap) && empty($request->direktorat) && empty($request->divisi) && empty($request->search)){
+                $query = Project::with(['lesson_learned'])->where('flag_mcs', 5)->get();
+            }
+	    if (!empty($request->tahap)){
                 $tahp = $request->tahap;
                 $query = Project::whereHas('lesson_learned', function ($q) use ($tahp) {
                     $q->where('tahap', '=', $tahp);
+		    $q->where('flag_mcs', 5);
                 })->get();
-            }elseif (empty($request->tahap) && !empty($request->divisi) && empty($request->search)){
+            }
+	    if (!empty($request->direktorat)){
+                $dir = $request->direktorat;
+                $query = Project::whereHas('divisi', function ($q) use ($dir) {
+                    $q->where('direktorat', '=', $dir);
+		    $q->where('flag_mcs', 5);
+                })->get();
+            }
+	    if (!empty($request->divisi)){
                 $div = $request->divisi;
                 $query = Project::whereHas('lesson_learned', function ($q) use ($div) {
                     $q->where('divisi_id', '=', $div);
+		    $q->where('flag_mcs', 5);
                 })->get();
-            }elseif(empty($request->tahap) && empty($request->divisi) && !empty($request->search)){
+            }
+	    if(!empty($request->search)){
                 $key = $request->search;
                 $query = Project::whereHas('lesson_learned', function ($q) use ( $key) {
-                    $q->where('lesson_learned', 'LIKE', '%'.$key.'%');
-                })->get();
-            }elseif (!empty($request->tahap) && !empty($request->divisi) && empty($request->search)){
-                $div = $request->divisi;
-                $tahp = $request->tahap;
-                $query = Project::whereHas('lesson_learned', function ($q) use ($div, $tahp) {
-                    $q->where('divisi_id', '=', $div);
-                    $q->where('tahap', '=', $tahp);
-                })->get();
-            }elseif (!empty($request->tahap) && empty($request->divisi) && !empty($request->search)){
-                $tahp = $request->tahap;
-                $key = $request->search;
-                $query = Project::whereHas('lesson_learned', function ($q) use ($tahp, $key) {
-                    $q->where('tahap', '=', $tahp);
-                    $q->where('lesson_learned', 'LIKE', '%'.$key.'%');
-                })->get();
-            }elseif (empty($request->tahap) && !empty($request->divisi) && !empty($request->search)){
-                $div = $request->divisi;
-                $key = $request->search;
-                $query = Project::whereHas('lesson_learned', function ($q) use ($div, $key) {
-                    $q->where('divisi_id', '=', $div);
-                    $q->where('lesson_learned', 'LIKE', '%'.$key.'%');
-                })->get();
-            }elseif (!empty($request->tahap) && !empty($request->divisi) && !empty($request->search)){
-                $div = $request->divisi;
-                $key = $request->search;
-                $tahp = $request->tahap;
-                $query = Project::whereHas('lesson_learned', function ($q) use ($div, $key, $tahp) {
-                    $q->where('divisi_id', '=', $div);
-                    $q->where('lesson_learned', 'LIKE', '%'.$key.'%');
-                    $q->where('tahap', '=', $tahp);
+                    $q->where('nama', 'LIKE', '%'.$key.'%');
+		    $q->where('flag_mcs', 5);
                 })->get();
             }
 

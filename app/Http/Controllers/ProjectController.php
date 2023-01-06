@@ -106,29 +106,33 @@ class ProjectController extends Controller
         $arr_tahap = explode('-', $tahp);
         $tahap = function ($q) use ($arr_tahap) {
             $q->whereIn('tahap', $arr_tahap);
+	    $q->where('flag_mcs', 5);
         };
 
         $arr_divisi = explode('-', $div);
         $divisi = function ($q) use ($arr_divisi) {
             $q->whereIn('divisi_id', $arr_divisi);
+	    $q->where('flag_mcs', 5);
         };
 
         $arr_consul = explode('-', $con);
         $consul = function ($q) use ($arr_consul) {
             $q->whereIn('consultant_id', $arr_consul);
+	    $q->where('flag_mcs', 5);
         };
 
         $arr_tahun = explode(',', $year);
 
         $search = function ($q) use ($key) {
             $q->where('nama', 'LIKE', '%'.$key.'%');
+	    $q->where('flag_mcs', 5);
         };
 
         // kondisi tahap
         if (empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && empty($year)){
-            $query = Project::with(['lesson_learned'])->get();
+            $query = Project::with(['lesson_learned'])->where('flag_mcs', 5)->get();
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && !empty($year)){
-            $query = Project::whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->whereHas('lesson_learned')->get();
+            $query = Project::whereHas('lesson_learned')->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai, '%Y-%m'))"), $arr_tahun)->get();
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort) && empty($year)){
             $query = Project::with(['lesson_learned'])->orderBy('nama', $sort)->get();
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort) && !empty($year)){

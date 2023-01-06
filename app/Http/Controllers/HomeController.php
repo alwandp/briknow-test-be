@@ -52,7 +52,14 @@ class HomeController extends Controller
             $getRecomInnitiative   = CommunicationSupport::with(['favorite_com' => function($q) {
                 $q->where('user_id', Auth::user()->id);
             }])->where('status','=', 'publish')
-                ->limit(6)->orderby('created_at','DESC')->get();
+                ->limit(3)->orderby('id','DESC')->get();
+
+ 	    $getImplementation   = Implementation::with(['favorite_implementation' => function($q) {
+                $q->where('user_id', Auth::user()->id);
+            }])->where('status','=', 'publish')
+                ->limit(3)->orderby('id','DESC')->get();
+
+	    $hasil = $getRecomInnitiative->merge($getImplementation)->sortByDesc('created_at')->take(6);
             $querydirektorat  = Divisi::select('direktorat')->groupBy('direktorat')->get();
             $queryUker            = Divisi::get();
             $consultant = Consultant::get();
@@ -72,11 +79,6 @@ class HomeController extends Controller
             $new    =   [];
             foreach ($get as $item) {
                 $obj    =   new stdClass;
-                // if (file_exists(public_path('storage/'.$item->thumbnail))) {
-                //     $obj->thumbnail = config('app.BE_url').'storage/'.$item->thumbnail;
-                // }else{
-                //     $obj->thumbnail = config('app.FE_url').'assets/img/boxdefault.svg';
-                // }
                 $obj->thumbnail     = $item->thumbnail;
                 $obj->slug          = $item->slug;
                 $obj->divisi        = $item->divisi;
@@ -86,18 +88,24 @@ class HomeController extends Controller
             }
 
             $classInni = [];
-            foreach ($getRecomInnitiative as $items){
+            foreach ($hasil as $items){
                 $objInni    = new stdClass;
                 $objInni->id            = $items->id;
                 $objInni->thumbnail     = $items->thumbnail;
                 $objInni->slug          = $items->slug;
                 $objInni->view          = $items->views;
                 $objInni->nama          = $items->title;
-                $objInni->type_file     = $items->type_file;
+                $objInni->type_file     = $items->type_file ?? "";
                 $objInni->created_at    = $items->created_at;
                 $objInni->updated_at    = $items->updated_at;
-                $objInni->desc          = $items->desc;
-                $objInni->fav           = count($items->favorite_com) > 0 ? 1 : 0;
+                $objInni->desc          = $items->desc ?? $items->desc_piloting ?? $items->desc_roll_out ?? $items->desc_sosialisasi;
+
+		if ($objInni->type_file !== "") {
+               	    $objInni->favInit = count(array($items->favorite_com)) > 0 ? 1 : 0;
+                } else {
+                    $objInni->favImpl = count(array($items->favorite_implementation)) > 0 ? 1 : 0;
+                }
+
                 $classInni[] = $objInni;
             }
 
@@ -621,10 +629,10 @@ class HomeController extends Controller
             $urlFE = config('app.FE_url').'lessonlearned';
             $data=[];
 
-            $query = Lesson_learned::whereBetween("created_at", [$month, $yesterday])
+            $query = Lesson_learned::
                 // ->without(['attach_file', 'project'])
                 // ->join('projects', 'lesson_learneds.project_id', '=', 'projects.id')
-                ->select(DB::raw("tahap, COUNT(tahap) as jml"))
+                select(DB::raw("tahap, COUNT(tahap) as jml"))
                 // ->where('projects.flag_mcs', 5)
                 ->groupBy("tahap")
                 ->get();

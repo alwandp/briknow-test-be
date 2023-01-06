@@ -14,7 +14,7 @@ class MyLessonLearnedController extends Controller
 {
     public function index(Request $request){
         if (Auth::User()->role == 0) {
-            if (empty($request->tahap) && empty($request->divisi) && empty($request->search)) {
+            if (empty($request->tahap) && empty($request->direktorat) && empty($request->divisi) && empty($request->search)) {
                 $query = Project::whereHas('lesson_learned', function ($q) {
                     $q->where('user_maker', Auth::user()->personal_number);
                     $q->where('flag_mcs', 5);
@@ -28,6 +28,14 @@ class MyLessonLearnedController extends Controller
                     $q->where('flag_mcs', 5);
                 })
                 ->orderBy('created_at', 'DESC')->get();
+            }
+	    if (!empty($request->direktorat)){
+                $dir = $request->direktorat;
+                $query = Project::whereHas('divisi', function ($q) use ($dir) {
+                    $q->where('user_maker', Auth::user()->personal_number);
+		    $q->where('direktorat', '=', $dir);
+                    $q->where('flag_mcs', 5);
+                })->orderBy('created_at', 'DESC')->get();
             }
             if (!empty($request->divisi)) {
                 $div = $request->divisi;
@@ -48,7 +56,7 @@ class MyLessonLearnedController extends Controller
                 ->orderBy('created_at', 'DESC')->get();
             }
         }elseif (Auth::User()->role == 3) {
-            if (empty($request->tahap) && empty($request->divisi) && empty($request->search)) {
+            if (empty($request->tahap) && empty($request->direktorat) && empty($request->divisi) && empty($request->search)) {
                 $query = Project::whereHas('lesson_learned', function ($q) {
                     $q->where('user_maker', Auth::user()->personal_number);
                     $q->where('flag_mcs', 5);
@@ -63,6 +71,14 @@ class MyLessonLearnedController extends Controller
                     $q->where('flag_mcs', 5);
                 })
                 ->orderBy('created_at', 'DESC')->get();
+            }
+	    if (!empty($request->direktorat)){
+                $dir = $request->direktorat;
+                $query = Project::whereHas('divisi', function ($q) use ($dir) {
+                    $q->where('user_maker', Auth::user()->personal_number);
+		    $q->where('direktorat', '=', $dir);
+                    $q->where('flag_mcs', 5);
+                })->orderBy('created_at', 'DESC')->get();
             }
             if (!empty($request->divisi)) {
                 $div = $request->divisi;
@@ -108,7 +124,7 @@ class MyLessonLearnedController extends Controller
 
         if (Auth::User()->role == 0) {
              $temp = [3,4,5,6];
-            if (empty($request->tahap) && empty($request->divisi) && empty($request->search)){
+            if (empty($request->tahap) && empty($request->direktorat) && empty($request->divisi) && empty($request->search)){
                 $query = Project::with(['lesson_learned'])
                     ->where('flag_mcs', 5)
                     ->get();
@@ -117,6 +133,13 @@ class MyLessonLearnedController extends Controller
                 $tahp = $request->tahap;
                 $query = Project::whereHas('lesson_learned', function ($q) use ($tahp) {
                     $q->where('tahap', '=', $tahp);
+                    $q->where('flag_mcs', 5);
+                })->get();
+            }
+	    if (!empty($request->direktorat)){
+                $dir = $request->direktorat;
+                $query = Project::whereHas('divisi', function ($q) use ($dir) {
+                    $q->where('direktorat', '=', $dir);
                     $q->where('flag_mcs', 5);
                 })->get();
             }
@@ -144,6 +167,13 @@ class MyLessonLearnedController extends Controller
                 $tahp = $request->tahap;
                 $query = Project::whereHas('lesson_learned', function ($q) use ($tahp) {
                     $q->where('tahap', '=', $tahp);
+                    $q->where('flag_mcs', 5);
+                })->get();
+            }
+	    if (!empty($request->direktorat)){
+                $dir = $request->direktorat;
+                $query = Project::whereHas('divisi', function ($q) use ($dir) {
+                    $q->where('direktorat', '=', $dir);
                     $q->where('flag_mcs', 5);
                 })->get();
             }

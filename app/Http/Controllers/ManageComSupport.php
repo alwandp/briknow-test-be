@@ -699,7 +699,7 @@ class ManageComSupport extends Controller
             'direktorat'    => "required",
             'divisi'        => 'required',
             'project'       => 'required',
-            // 'title'         => 'required',
+            //'title'         => 'required',
             'status'        => 'required',
             'tgl_mulai'     => 'required',
             'pm'            => 'required',
@@ -931,9 +931,9 @@ class ManageComSupport extends Controller
 
             if (request()->piloting == 1) {
                 $tampung_attach_pilot = request()->attach_pilot;
-                if (isset($tampung_attach_pilot)) {
+                /* if (isset($tampung_attach_pilot)) {
                     AttachFile::whereNotIn('url_file', $tampung_attach_pilot)->where('implementation_id', $id)->delete();
-                }
+                } */
 
                 if (isset($tampung_attach_pilot)) {
                     for ($i = 0; $i < count($tampung_attach_pilot); $i++) {
@@ -955,9 +955,9 @@ class ManageComSupport extends Controller
 
             if (request()->rollout == 1) {
                 $tampung_attach_rollout     =   request()->attach_rollout;
-                if (isset($tampung_attach_rollout)) {
+                /* if (isset($tampung_attach_rollout)) {
                     AttachFile::whereNotIn('url_file', $tampung_attach_rollout)->where('implementation_id', $id)->delete();
-                }
+                }*/
                 if (isset($tampung_attach_rollout)) {
                     for ($i = 0; $i < count($tampung_attach_rollout); $i++) {
                         $cek = TempUpload::where('path', $tampung_attach_rollout[$i])->first();
@@ -978,9 +978,9 @@ class ManageComSupport extends Controller
 
             if (request()->sosialisasi == 1) {
                 $tampung_attach_sosialisasi     =   request()->attach_sosialisasi;
-                if (isset($tampung_attach_sosialisasi)) {
+                /*if (isset($tampung_attach_sosialisasi)) {
                     AttachFile::whereNotIn('url_file', $tampung_attach_sosialisasi)->where('implementation_id', $id)->delete();
-                }
+                }*/
                 if (isset($tampung_attach_sosialisasi)) {
                     for ($i = 0; $i < count($tampung_attach_sosialisasi); $i++) {
                         $cek = TempUpload::where('path', $tampung_attach_sosialisasi[$i])->first();
