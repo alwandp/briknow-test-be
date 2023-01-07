@@ -13,45 +13,57 @@ use Illuminate\Support\Facades\Log;
 
 class CommunicationSupportController extends Controller {
 
-    public function getCommunicationInitiative(Request $request, $type) {
+    public function getCommunicationInitiative(Request $request, $type)
+    {
         try {
-            $model = CommunicationSupport::with(['attach_file', 'favorite_com' => function($q) {
+            $model = CommunicationSupport::with(['attach_file', 'favorite_com' => function ($q) {
                 $q->where('user_id', Auth::user()->id);
-            }])->where('status',  'publish');
+            }])->where('status',  'publish')->orderBy('created_at', 'desc');
 
-            if ($type !== 'all'){
+            if ($type !== 'all') {
                 $model->where('type_file', $type);
             }
 
-            $order = 'desc';
-            if($request->get('order')) {
-                $order = $request->get('order');
+            if ($request->get('sort')) {
+                if ($type !== 'all') {
+                    if ($request->get('sort') == 'title') {
+                        $model = CommunicationSupport::with(['attach_file', 'favorite_com' => function ($q) {
+                            $q->where('user_id', Auth::user()->id);
+                        }])->where('type_file', $type)->where('status',  'publish')->orderBy('title', 'asc');
+                    } elseif ($request->get('sort') == 'views') {
+                        $model = CommunicationSupport::with(['attach_file', 'favorite_com' => function ($q) {
+                            $q->where('user_id', Auth::user()->id);
+                        }])->where('type_file', $type)->where('status',  'publish')->orderBy('views', 'desc');
+                    } else {
+                        $model = CommunicationSupport::with(['attach_file', 'favorite_com' => function ($q) {
+                            $q->where('user_id', Auth::user()->id);
+                        }])->where('type_file', $type)->where('status',  'publish')->orderBy('created_at', 'desc');
+                    }
+                } 
             }
-            $sort= 'views';
-            $model->orderBy($sort, $order);
-            if($request->get('sort')) {
-                $sort = $request->get('sort');
-                $model->orderBy($sort, $order);
+
+            if ($request->get('search')) {
+                $model->where('title', 'like', '%' . $request->get('search') . '%');
             }
-            if($request->get('search')) {
-                $model->where('title', 'like','%'.$request->get('search').'%');
-            }
-            if($request->get('year')) {
-                $where_in_year = explode(",",$request->get('year'));
+
+            if ($request->get('year')) {
+                $where_in_year = explode(",", $request->get('year'));
                 $model->whereIn(DB::raw('year(created_at)'), $where_in_year);
             }
-            if($request->get('month')) {
-                $where_in_month = explode(",",$request->get('month'));
+
+            if ($request->get('month')) {
+                $where_in_month = explode(",", $request->get('month'));
                 $model->whereIn(DB::raw('month(created_at)'), $where_in_month);
             }
-            if($request->get('divisi')) {
-                $where_in = explode(",",$request->get('divisi'));
+
+            if ($request->get('divisi')) {
+                $where_in = explode(",", $request->get('divisi'));
                 $model->whereHas('project', function ($q) use ($where_in) {
                     $q->where('divisi_id', $where_in);
                 });
             }
 
-            if($request->get('direktorat')) {
+            if ($request->get('direktorat')) {
                 $dir = $request->get('direktorat');
                 $dir = str_replace('-', ' ', $dir);
                 $dir = str_replace('%20', ' ', $dir);
@@ -60,10 +72,10 @@ class CommunicationSupportController extends Controller {
                 if ($dir === 'NULL') {
                     $queryDiv = Divisi::where('direktorat', NULL)->get();
                 } else {
-                    $queryDiv = Divisi::where('direktorat', 'like', '%'.$dir.'%')->get();
+                    $queryDiv = Divisi::where('direktorat', 'like', '%' . $dir . '%')->get();
                 }
 
-                $temp=[];
+                $temp = [];
                 foreach ($queryDiv as $itemDiv) {
                     $temp[] = $itemDiv->id;
                 }
@@ -75,7 +87,7 @@ class CommunicationSupportController extends Controller {
             $total = $model->get();
             $data = $model->paginate(12);
 
-            $count = count($data);
+            $count = count(array($data));
             $countTotal = count($total);
             $countNotFilter = CommunicationSupport::with(['attach_file'])
                 ->where('type_file', $type)->where('status',  'publish')->count();
@@ -87,16 +99,15 @@ class CommunicationSupportController extends Controller {
                 "totalRow"  => $count,
                 "total"     => $countTotal,
                 "totalData" => $countNotFilter
-            ],200);
-        } catch (\Throwable $th){
+            ], 200);
+        } catch (\Throwable $th) {
             $datas['message']    =   'GET Gagal';
             return response()->json([
                 'status'    =>  0,
                 'data'      =>  $datas,
                 'error' => $th
-            ],200);
+            ], 200);
         }
-
     }
 
     public function getStrategic(Request $request)
