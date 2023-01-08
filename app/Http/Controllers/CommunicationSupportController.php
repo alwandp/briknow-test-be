@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class CommunicationSupportController extends Controller {
 
+    // clear filter
     public function getCommunicationInitiative(Request $request, $type)
     {
         try {
@@ -48,12 +49,12 @@ class CommunicationSupportController extends Controller {
 
             if ($request->get('year')) {
                 $where_in_year = explode(",", $request->get('year'));
-                $model->whereIn(DB::raw('year(created_at)'), $where_in_year);
+                $model->whereIn(DB::raw('year(tanggal_upload)'), $where_in_year);
             }
 
             if ($request->get('month')) {
                 $where_in_month = explode(",", $request->get('month'));
-                $model->whereIn(DB::raw('month(created_at)'), $where_in_month);
+                $model->whereIn(DB::raw('month(tanggal_upload)'), $where_in_month);
             }
 
             if ($request->get('divisi')) {
@@ -110,6 +111,7 @@ class CommunicationSupportController extends Controller {
         }
     }
 
+    // clear filter, namun belum bisa multiple pada tahun, bulan dan divisi
     public function getStrategic(Request $request)
     {
         try {
@@ -121,17 +123,42 @@ class CommunicationSupportController extends Controller {
             $tahap      = $request->tahap;
 
             // sub query
+            $where_in = explode(",", $request->get('divisi'));
+            $where_in_year = explode(",", $request->get('year'));
+            $where_in_month = explode(",", $request->get('month'));
+
             $publish = fn ($q) => $q->where('status', 'publish');
-            $piloting = fn ($q) => $q->where('status', 'publish')->whereNotNull('desc_piloting');
-            $rollOut = fn ($q) => $q->where('status', 'publish')->whereNotNull('desc_roll_out');
-            $sosialisasi = fn ($q) => $q->where('status', 'publish')->whereNotNull('desc_sosialisasi');
+            $implementation = Implementation::join('projects', 'implementation.project_id', '=', 'projects.id')->where('status', 'publish')
+                            ->select(DB::raw('distinct project_id'), DB::raw('projects.nama as nama, projects.slug as slug, projects.thumbnail, max(implementation.created_at) as created_at'))
+                            ->groupBy('implementation.project_id')->where('status', 'publish');
 
             $cariProject = function ($q) use ($search) {
                 $q->where('status', 'publish');
                 $q->where('projects.nama', 'like', '%' . $search . '%');
             };
 
-            // multiple filter condition
+            // pilih direktorat
+            if ($request->get('direktorat')) {
+                $dir = $request->get('direktorat');
+                $dir = str_replace('-', ' ', $dir);
+                $dir = str_replace('%20', ' ', $dir);
+
+
+                if ($dir === 'NULL') {
+                    $queryDiv = Divisi::where('direktorat', NULL)->get();
+                } else {
+                    $queryDiv = Divisi::where('direktorat', 'like', '%' . $dir . '%')->get();
+                }
+
+                $temp = [];
+                foreach ($queryDiv as $itemDiv) {
+                    $temp[] = $itemDiv->id;
+                }
+
+                $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->whereIn('divisi_id', $temp);
+            }
+
+           // multiple filter condition
             if (empty($tahun) && empty($bulan) && empty($divisi) && empty($sort) && empty($search) && empty($tahap)) {
                 $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->orderBy('created_at', 'desc');
             } elseif (empty($tahun) && empty($bulan) && empty($divisi) && !empty($sort) && empty($search) && empty($tahap)) {
@@ -140,69 +167,43 @@ class CommunicationSupportController extends Controller {
             } elseif (empty($tahun) && empty($bulan) && empty($divisi) && empty($sort) && !empty($search) && empty($tahap)) {
                 $query = Project::whereHas('communication_support', $cariProject)->orWhereHas('implementation', $cariProject);
             } elseif (empty($tahun) && empty($bulan) && empty($divisi) && empty($sort) && empty($search) && !empty($tahap)) {
-                if ($tahap == 'piloting') $query = Project::whereHas('implementation', $piloting)->orderBy('created_at', 'asc');
-                elseif ($tahap == 'roll-out') $query = Project::whereHas('implementation', $rollOut)->orderBy('created_at', 'asc');
-                elseif ($tahap == 'sosialisasi') $query = Project::whereHas('implementation', $sosialisasi)->orderBy('created_at', 'asc');
-                elseif ($tahap == 'all') $query = Project::whereHas('implementation', $publish)->orderBy('created_at', 'asc');
+                if ($tahap == 'piloting') $query = $implementation->whereNotNull('desc_piloting')->orderBy('created_at', 'desc');
+                elseif ($tahap == 'roll-out') $query = $implementation->whereNotNull('desc_roll_out')->orderBy('created_at', 'desc');
+                elseif ($tahap == 'sosialisasi') $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('created_at', 'desc');
+                elseif ($tahap == 'all') $query = $implementation->orderBy('created_at', 'desc');
             } elseif (empty($tahun) && empty($bulan) && empty($divisi) && !empty($sort) && !empty($search) && empty($tahap)) {
                 if ($sort == 'nama') $query = Project::whereHas('communication_support', $cariProject)->orWhereHas('implementation', $cariProject)->orderBy('nama', 'asc');
                 else $query = Project::whereHas('communication_support', $cariProject)->orWhereHas('implementation', $cariProject)->orderBy('created_at', 'desc');
             } elseif (empty($tahun) && empty($bulan) && empty($divisi) && !empty($sort) && empty($search) && !empty($tahap)) {
-                if ($sort == 'nama' && $tahap == 'piloting') $query = Project::whereHas('implementation', $piloting)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'piloting') $query = Project::whereHas('implementation', $piloting)->orderBy('created_at', 'desc');
-                elseif ($sort == 'nama' && $tahap == 'roll-out') $query = Project::whereHas('implementation', $rollOut)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'roll-out') $query = Project::whereHas('implementation', $rollOut)->orderBy('created_at', 'desc');
-                elseif ($sort == 'nama' && $tahap == 'sosialisasi') $query = Project::whereHas('implementation', $sosialisasi)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'sosialisasi') $query = Project::whereHas('implementation', $sosialisasi)->orderBy('created_at', 'desc');
-                elseif ($sort == 'nama' && $tahap == 'all') $query = Project::whereHas('implementation', $publish)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'all') $query = Project::whereHas('implementation', $publish)->orderBy('created_at', 'desc');
+                if ($sort == 'nama' && $tahap == 'piloting') $query = $implementation->whereNotNull('desc_piloting')->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'piloting') $query = $implementation->whereNotNull('desc_piloting')->orderBy('created_at', 'desc');
+                elseif ($sort == 'nama' && $tahap == 'roll-out') $query = $implementation->whereNotNull('desc_roll_out')->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'roll-out') $query = $implementation->whereNotNull('desc_roll_out')->orderBy('created_at', 'desc');
+                elseif ($sort == 'nama' && $tahap == 'sosialisasi') $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'sosialisasi') $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('created_at', 'desc');
+                elseif ($sort == 'nama' && $tahap == 'all') $query = $implementation->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'all') $query = $implementation->orderBy('created_at', 'desc');
             } elseif (empty($tahun) && empty($bulan) && empty($divisi) && !empty($sort) && !empty($search) && !empty($tahap)) {
-                if ($sort == 'nama' && $tahap == 'piloting') $query = Project::whereHas('implementation', $piloting)->whereHas('implementation', $cariProject)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'piloting') $query = Project::whereHas('implementation', $piloting)->whereHas('implementation', $cariProject)->orderBy('created_at', 'desc');
-                elseif ($sort == 'nama' && $tahap == 'roll-out') $query = Project::whereHas('implementation', $rollOut)->whereHas('implementation', $cariProject)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'roll-out') $query = Project::whereHas('implementation', $rollOut)->whereHas('implementation', $cariProject)->orderBy('created_at', 'desc');
-                elseif ($sort == 'nama' && $tahap == 'sosialisasi') $query = Project::whereHas('implementation', $sosialisasi)->whereHas('implementation', $cariProject)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'sosialisasi') $query = Project::whereHas('implementation', $sosialisasi)->whereHas('implementation', $cariProject)->orderBy('created_at', 'desc');
-                elseif ($sort == 'nama' && $tahap == 'all') $query = Project::whereHas('implementation', $publish)->whereHas('implementation', $cariProject)->orderBy('nama', 'asc');
-                elseif ($sort == 'created_at' && $tahap == 'all') $query = Project::whereHas('implementation', $publish)->whereHas('implementation', $cariProject)->orderBy('created_at', 'desc');
+                if ($sort == 'nama' && $tahap == 'piloting') $query = $implementation->whereNotNull('desc_piloting')->where('nama', 'LIKE', '%' . $search . '%')->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'piloting') $query = $implementation->whereNotNull('desc_piloting')->where('nama', 'LIKE', '%' . $search . '%')->orderBy('created_at', 'desc');
+                elseif ($sort == 'nama' && $tahap == 'roll-out') $query = $implementation->whereNotNull('desc_roll_out')->where('nama', 'LIKE', '%' . $search . '%')->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'roll-out') $query = $implementation->whereNotNull('desc_roll_out')->where('nama', 'LIKE', '%' . $search . '%')->orderBy('created_at', 'desc');
+                elseif ($sort == 'nama' && $tahap == 'sosialisasi') $query = $implementation->whereNotNull('desc_sosialisasi')->where('nama', 'LIKE', '%' . $search . '%')->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'sosialisasi') $query = $implementation->whereNotNull('desc_sosialisasi')->where('nama', 'LIKE', '%' . $search . '%')->orderBy('created_at', 'desc');
+                elseif ($sort == 'nama' && $tahap == 'all') $query = $implementation->where('nama', 'LIKE', '%' . $search . '%')->orderBy('nama', 'asc');
+                elseif ($sort == 'created_at' && $tahap == 'all') $query = $implementation->where('nama', 'LIKE', '%' . $search . '%')->orderBy('created_at', 'desc');
             } elseif (empty($tahun) && empty($bulan) && empty($divisi) && empty($sort) && !empty($search) && !empty($tahap)) {
-                if ($tahap == 'piloting') $query = Project::whereHas('implementation', $piloting)->whereHas('implementation', $cariProject);
-                elseif ($tahap == 'roll-out') $query = Project::whereHas('implementation', $rollOut)->whereHas('implementation', $cariProject);
-                elseif ($tahap == 'sosialisasi') $query = Project::whereHas('implementation', $sosialisasi)->whereHas('implementation', $cariProject);
-                elseif ($tahap == 'all') $query = Project::whereHas('implementation', $publish)->whereHas('implementation', $cariProject);
-            }
-
-            // elseif (!empty($tahun) && empty($bulan) && empty($divisi) && empty($sort) && empty($search) && empty($tahap)) {
-            //     $where_in_year = explode(",", $request->get('year'));
-            //     $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->whereIn(DB::raw('year(created_at)'), $where_in_year);
-            // } elseif (empty($tahun) && !empty($bulan) && empty($divisi) && empty($sort) && empty($search) && empty($tahap)) {
-            //     $where_in_month = explode(",", $request->get('month'));
-            //     $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->whereIn(DB::raw('month(created_at)'), $where_in_month);
-            // } 
-
-            // if ($request->get('divisi')) {
-            //     $where_in = explode(",", $request->get('divisi'));
-            //     $model->whereIn('divisi_id', $where_in);
-            // }
-
-            // if ($request->get('direktorat')) {
-            //     $dir = $request->get('direktorat');
-            //     $dir = str_replace('-', ' ', $dir);
-            //     $dir = str_replace('%20', ' ', $dir);
-
-
-            //     if ($dir === 'NULL') {
-            //         $queryDiv = Divisi::where('direktorat', NULL)->get();
-            //     } else {
-            //         $queryDiv = Divisi::where('direktorat', 'like', '%' . $dir . '%')->get();
-            //     }
-
-            //     $temp = [];
-            //     foreach ($queryDiv as $itemDiv) {
-            //         $temp[] = $itemDiv->id;
-            //     }
-            //     $model->whereIn('divisi_id', $temp);;
-            // }
+                if ($tahap == 'piloting') $query = $implementation->whereNotNull('desc_piloting')->where('nama', 'LIKE', '%' . $search . '%');
+                elseif ($tahap == 'roll-out') $query = $implementation->whereNotNull('desc_roll_out')->where('nama', 'LIKE', '%' . $search . '%');
+                elseif ($tahap == 'sosialisasi') $query = $implementation->whereNotNull('desc_sosialisasi')->where('nama', 'LIKE', '%' . $search . '%');
+                elseif ($tahap == 'all') $query = $implementation->where('nama', 'LIKE', '%' . $search . '%');
+            } elseif (!empty($tahun) && empty($bulan) && empty($divisi) && empty($sort) && empty($search) && empty($tahap)) {
+                $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->whereIn(DB::raw('year(created_at)'), $where_in_year);
+            } elseif (empty($tahun) && !empty($bulan) && empty($divisi) && empty($sort) && empty($search) && empty($tahap)) {
+                $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->whereIn(DB::raw('month(created_at)'), $where_in_month);
+            } elseif (empty($tahun) && empty($bulan) && !empty($divisi) && empty($sort) && empty($search) && empty($tahap)) {
+                $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->whereIn('divisi_id', $where_in);
+            } 
 
             $data = $query->get();
             $count = count($data);
@@ -391,6 +392,7 @@ class CommunicationSupportController extends Controller {
         }
     }
 
+    // clear filter
     public function getAllImplementation(Request $request, $step)
     {
         $tahun      = $request->year;
@@ -1740,16 +1742,16 @@ class CommunicationSupportController extends Controller {
                 $q->where('user_id', Auth::user()->id);
             }])->where('status', 'publish')->where('slug', $slug)->first();
 
-            $is_allowed = 0; //dilarang
+            $is_allowed = 0;
             if ($data->is_restricted == 1) {
                 $user_access = explode(",",$data->user_access);
                 foreach($user_access as $user){
-                    if($user == Auth::user()->personal_number) { //ketika yg di allow match dengan yg lagi login maka..
-                        $is_allowed = 1; //diizinkan
+                    if($user == Auth::user()->personal_number) {
+                        $is_allowed = 1;
                         break;
                     }
                 }
-            } else { //jika tidak bersifat RESTRICTED maka siapa saja yg akses dengan user apapun bisa lolos liat
+            } else {
                 $is_allowed = 1;
             }
 
@@ -1762,7 +1764,7 @@ class CommunicationSupportController extends Controller {
 
             if (!$data) {
                 $data_error['message'] = 'Implementation tidak ditemukan!';
-                $data_error['error_code'] = 1; //error
+                $data_error['error_code'] = 1;
                 return response()->json([
                     'status' => 0,
                     'data'  => $data_error
@@ -1796,7 +1798,7 @@ class CommunicationSupportController extends Controller {
             $datas = $model->first();
             if (!$datas) {
                 $data_error['message'] = 'Proyek tidak ditemukan!';
-                $data_error['error_code'] = 1; //error
+                $data_error['error_code'] = 1;
                 return response()->json([
                     'status' => 0,
                     'data'  => $data_error
@@ -1837,7 +1839,7 @@ class CommunicationSupportController extends Controller {
             $datas = $model->first();
             if (!$datas) {
                 $data_error['message'] = 'Proyek tidak ditemukan!';
-                $data_error['error_code'] = 1; //error
+                $data_error['error_code'] = 1;
                 return response()->json([
                     'status' => 0,
                     'data'  => $data_error
@@ -1864,11 +1866,10 @@ class CommunicationSupportController extends Controller {
     }
 
     function getFileProject($id) {
-
         $model = Project::find($id)->first();
         if (!$model) {
             $data_error['message'] = 'Proyek tidak ditemukan!';
-            $data_error['error_code'] = 1; //error
+            $data_error['error_code'] = 1;
             return response()->json([
                 'status' => 0,
                 'data'  => $data_error
@@ -1880,5 +1881,4 @@ class CommunicationSupportController extends Controller {
             "data"      => $model,
         ],200);
     }
-
 }
