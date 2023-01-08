@@ -1720,7 +1720,7 @@ class CommunicationSupportController extends Controller {
         }
 
         $total = $query->get();
-        $data = $query->paginate(5);
+        $data = $query->paginate(12);
 
         $count = count($data);
         $countTotal = count($total);
