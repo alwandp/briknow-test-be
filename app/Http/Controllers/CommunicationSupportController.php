@@ -1717,35 +1717,6 @@ class CommunicationSupportController extends Controller {
             ], 200);
         }
 
-        if ($request->get('month')) {
-            
-            $model-;
-        }
-
-        // if ($request->get('divisi')) {
-        //     $where_in = explode(",", $request->get('divisi'));
-        //     $model->whereIn('projects.divisi_id', $where_in);
-        // }
-
-        // if ($request->get('direktorat')) {
-        //     $dir = $request->get('direktorat');
-        //     $dir = str_replace('-', ' ', $dir);
-        //     $dir = str_replace('%20', ' ', $dir);
-
-
-        //     if ($dir === 'NULL') {
-        //         $queryDiv = Divisi::where('direktorat', NULL)->get();
-        //     } else {
-        //         $queryDiv = Divisi::where('direktorat', 'like', '%' . $dir . '%')->get();
-        //     }
-
-        //     $temp = [];
-        //     foreach ($queryDiv as $itemDiv) {
-        //         $temp[] = $itemDiv->id;
-        //     }
-        //     $model->whereIn('projects.divisi_id', $temp);;
-        // }
-
         $total = $query->get();
         $data = $query->paginate(5);
 
