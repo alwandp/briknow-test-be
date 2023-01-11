@@ -779,25 +779,8 @@ class ManageComSupport extends Controller
             $restricted = '1';
         }
 
-        if (request()->is_new_project == 1) {
-            $project = Project::create([
-                'divisi_id'             => request()->divisi,
-                'project_managers_id'   => $create_pm->id,
-                'nama'                  => request()->project,
-                'slug'                  => $waktu . "-" . \Str::slug(request()->project),
-                'thumbnail'             => request()->thumbnail,
-                'deskripsi'             => '-',
-                'metodologi'            => '-',
-                'tanggal_mulai'         => request()->tgl_mulai,
-                'tanggal_selesai'       => request()->tgl_selesai,
-                'status_finish'         => request()->status,
-                'is_recomended'         => 0,
-                'is_restricted'         => $restricted,
-                'flag_mcs'              => 3,
-                'user_maker'            => Auth::User()->personal_number,
-                'user_checker'          => $dataChecker->personal_number,
-                'user_signer'           => $dataSigner->personal_number,
-            ]);
+        $project = Project::where('nama', request()->project)->first();
+        if ($project) {
             $project_id = $project->id;
         } else {
             $project_id = request()->project;
