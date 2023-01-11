@@ -616,11 +616,15 @@ class CommunicationSupportController extends Controller {
         }
 
         $total = $query->get();
-        $data = $query->paginate(12);
+        $data = $query->paginate(5);
 
         $count = count($data);
         $countTotal = count($total);
         $countNotFilter = $query->count();
+
+        $paginate   = view('implementation.paginate',compact('data'))->render();
+        $data['paginate'] = $paginate;
+        $data['total'] = $count;
 
         return response()->json([
             "message"   => "GET Berhasil",

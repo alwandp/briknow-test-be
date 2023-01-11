@@ -130,140 +130,147 @@ class ProjectController extends Controller
 
         // kondisi tahap
         if (empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && empty($year)){
-            $query = Project::with(['lesson_learned'])->where('flag_mcs', 5)->get();
+            $query = Project::with(['lesson_learned'])->where('flag_mcs', 5)->orderBy('created_at', 'DESC');
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && !empty($year)){
-            $query = Project::whereHas('lesson_learned')->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai, '%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned')->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai, '%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort) && empty($year)){
-            $query = Project::with(['lesson_learned'])->orderBy('nama', $sort)->get();
+            $query = Project::with(['lesson_learned'])->orderBy('nama', $sort);
         } elseif (empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort) && !empty($year)){
-            $query = Project::whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->whereHas('lesson_learned')->orderBy('nama', $sort)->get();
+            $query = Project::whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->whereHas('lesson_learned')->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && empty($year)){
-            $query = Project::whereHas('lesson_learned', $tahap)->get();
+            $query = Project::whereHas('lesson_learned', $tahap);
         } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && empty($sort) && !empty($year)){
-            $query = Project::whereHas('lesson_learned', $tahap)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && empty($con) && empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && !empty($div) && empty($con) && empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi);
         } elseif (!empty($tahp) && !empty($div) && empty($con) && empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (!empty($tahp) && !empty($div) && empty($con) && empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && !empty($div) && empty($con) && empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && !empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && !empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && !empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && !empty($div) && !empty($con) && !empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && !empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && !empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && !empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && !empty($con) && !empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && empty($con) && !empty($key) && empty($sort) && empty($year)){
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search);
         } elseif (!empty($tahp) && empty($div) && empty($con) && !empty($key) && empty($sort) && !empty($year)){
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (!empty($tahp) && empty($div) && empty($con) && !empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search)->orderBy('nama', $sort);
         } elseif (!empty($tahp) && empty($div) && empty($con) && !empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $tahap)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } 
 
         // kondisi divisi
         elseif (empty($tahp) && !empty($div) && empty($con) && empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->get();
+            $query = Project::whereHas('lesson_learned', $divisi);
         } elseif (empty($tahp) && !empty($div) && empty($con) && empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && !empty($div) && empty($con) && empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->orderBy('nama', $sort);
         } elseif (empty($tahp) && !empty($div) && empty($con) && empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->orderBy('nama', $sort);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (empty($tahp) && !empty($div) && empty($con) && !empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search);
         } elseif (empty($tahp) && !empty($div) && empty($con) && !empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && !empty($div) && empty($con) && !empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search)->orderBy('nama', $sort);
         } elseif (empty($tahp) && !empty($div) && empty($con) && !empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && !empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && !empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && !empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->orderBy('nama', $sort);
         } elseif (empty($tahp) && !empty($div) && !empty($con) && !empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $divisi)->whereHas('consultant', $consul)->whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         }
 
         // kondisi consultant
         elseif (empty($tahp) && empty($div) && !empty($con) && empty($key) && empty($sort) && empty($year)) {
-            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul)->get();
+            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul);
         } elseif (empty($tahp) && empty($div) && !empty($con) && empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && empty($div) && !empty($con) && !empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->whereHas('consultant', $consul)->get();
+            $query = Project::whereHas('lesson_learned', $search)->whereHas('consultant', $consul);
         } elseif (empty($tahp) && empty($div) && !empty($con) && !empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $search)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && empty($div) && !empty($con) && !empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->orderBy('nama', $sort)->whereHas('consultant', $consul)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $search)->orderBy('nama', $sort)->whereHas('consultant', $consul)->orderBy('nama', $sort);
         } elseif (empty($tahp) && empty($div) && !empty($con) && !empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->orderBy('nama', $sort)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $search)->orderBy('nama', $sort)->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         } elseif (empty($tahp) && empty($div) && !empty($con) && empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul)->orderBy('nama', $sort)->get();
+            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul)->orderBy('nama', $sort);
         } elseif (empty($tahp) && empty($div) && !empty($con) && empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::with(['lesson_learned'])->whereHas('consultant', $consul)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         }
 
         // kondisi search
         elseif (empty($tahp) && empty($div) && empty($con) && !empty($key) && empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->get();
+            $query = Project::whereHas('lesson_learned', $search);
         } elseif (empty($tahp) && empty($div) && empty($con) && !empty($key) && empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->get();
+            $query = Project::whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun);
         } elseif (empty($tahp) && empty($div) && empty($con) && !empty($key) && !empty($sort) && empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $search)->orderBy('nama', $sort);
         } elseif (empty($tahp) && empty($div) && empty($con) && !empty($key) && !empty($sort) && !empty($year)) {
-            $query = Project::whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort)->get();
+            $query = Project::whereHas('lesson_learned', $search)->whereIn(DB::raw("(DATE_FORMAT(tanggal_mulai,'%Y-%m'))"), $arr_tahun)->orderBy('nama', $sort);
         }
+
+        $data = $query->paginate(8);
+        $count = count($data);
+
+        $paginate   = view('katalog.paginate',compact('data'))->render();
+        $data['paginate'] = $paginate;
+        $data['total'] = $count;
 
         return response()->json([
             "message"   => "GET Berhasil",
             "status"    => 1,
-            "data"      => $query
+            "data"      => $data
         ],200);
     }
 
