@@ -8,6 +8,7 @@ use App\Consultant;
 use App\Divisi;
 use App\Implementation;
 use App\Keywords;
+use App\Notifikasi;
 use App\Project;
 use App\Project_managers;
 use App\Restriction;
@@ -47,12 +48,16 @@ class ManageComSupport extends Controller
             }
 
             $total = $model->get();
-            $data = $model->skip($offset)->take($limit)->get();
+            $data = $model->paginate(10);
 
             $count = count($data);
             $countTotal = count($total);
             $countNotFilter = CommunicationSupport::with(['attach_file'])
                 ->where('type_file', $type)->where('status', '!=', 'deleted')->count();
+
+            $paginate   = view('manage_cominit.paginate',compact('data'))->render();
+            $data['paginate'] = $paginate;
+            $data['total'] = $count;
 
             return response()->json([
                 "message"   => "GET Berhasil",
@@ -82,9 +87,9 @@ class ManageComSupport extends Controller
                 $q->where('status', '!=', 'deleted');
             });
 
-            $limit = intval($request->get('limit', 10));
-            $offset = intval($request->get('offset', 0));
-            $order = 'asc';
+            // $limit = intval($request->get('limit', 10));
+            // $offset = intval($request->get('offset', 0));
+            // $order = 'asc';
             if ($request->get('order')) {
                 $order = $request->get('order');
             }
@@ -96,13 +101,17 @@ class ManageComSupport extends Controller
             }
 
             $total = $model->get();
-            $data = $model->skip($offset)->take($limit)->get();
+            $data = $model->paginate(10);
 
             $count = count($data);
             $countTotal = count($total);
             $countNotFilter = Project::whereHas('communication_support', function ($q) {
                 $q->where('status', '!=', 'deleted');
             })->count();
+
+            $paginate   = view('manage_strategic.paginate',compact('data'))->render();
+            $data['paginate'] = $paginate;
+            $data['total'] = $count;
 
             return response()->json([
                 "message"   => "GET Berhasil",
@@ -201,23 +210,12 @@ class ManageComSupport extends Controller
                 ->where('communication_support.project_id', $project->id)
                 ->where('communication_support.status', '!=', 'deleted');
 
-            $limit = intval($request->get('limit', 10));
-            $offset = intval($request->get('offset', 0));
-            $order = 'desc';
-            if ($request->get('order')) {
-                $order = $request->get('order');
-            }
-            if ($request->get('sort')) {
-                $model->orderBy($request->get('sort'), $order);
-            } else {
-                $model->orderBy('communication_support.tanggal_upload', $order);
-            }
             if ($request->get('search')) {
                 $model->where('communication_support.title', 'like', '%' . $request->get('search') . '%');
             }
 
             $total = $model->get();
-            $data = $model->skip($offset)->take($limit)->get();
+            $data = $model->paginate(10);
 
             $count = count($data);
             $countTotal = count($total);
@@ -225,6 +223,10 @@ class ManageComSupport extends Controller
                 ->where('type_file', $type)
                 ->where('project_id', $project->id)
                 ->where('status', '!=', 'deleted')->count();
+
+            $paginate   = view('manage_strategicbytype.paginate',compact('data'))->render();
+            $data['paginate'] = $paginate;
+            $data['total'] = $count;
 
             return response()->json([
                 "message"   => "GET Berhasil",
@@ -324,7 +326,7 @@ class ManageComSupport extends Controller
     public function getAllImplementation(Request $request, $step)
     {
         try {
-            $model = Implementation::where('status', '!=', 'deleted');
+            $model = Implementation::where('status', '!=', 'deleted')->orderBy('tanggal_mulai', 'DESC');
             $modelCount = Implementation::where('status', '!=', 'deleted');
 
             $limit = intval($request->get('limit', 10));
@@ -359,11 +361,15 @@ class ManageComSupport extends Controller
             }
 
             $total = $model->get();
-            $data = $model->skip($offset)->take($limit)->get();
+            $data = $model->paginate(10);
 
             $count = count($data);
             $countTotal = count($total);
             $countNotFilter = $modelCount->count();
+
+            $paginate   = view('manage_implementation.paginate',compact('data'))->render();
+            $data['paginate'] = $paginate;
+            $data['total'] = $count;
 
             return response()->json([
                 "message"   => "GET Berhasil",
@@ -383,23 +389,239 @@ class ManageComSupport extends Controller
         }
     }
 
-    public function setStatusImplementation($status, $id)
+    public function getMyImplementation(Request $request)
     {
         try {
+            if (Auth::User()->role == 0) {
+                $model = Implementation::where(function($q){
+                    $q->orWhere('user_maker', Auth::user()->personal_number);
+                    $q->orWhere('user_checker', Auth::user()->personal_number)->where('status', 'review');
+                    $q->orWhere('user_signer', Auth::user()->personal_number)->where('status', 'checked');
+                })->orderBy('created_at', 'DESC');
+            }elseif (Auth::User()->role == 3) {
+                // $temp = [3,4,5,6];
+                $model = Implementation::where('status', '!=', 'deleted')->orderBy('tanggal_mulai', 'DESC');
+            }
+            // $model = Implementation::where('status', '!=', 'deleted')->orderBy('tanggal_mulai', 'DESC');
+            $modelCount = Implementation::where('status', '!=', 'deleted');
+
+            $total = $model->get();
+            $data = $model->get();
+
+            $count = count($data);
+            $countTotal = count($total);
+            $countNotFilter = $modelCount->count();
+
+            // $paginate   = view('myimplementation.paginate',compact('data'))->render();
+            // $data['paginate'] = $paginate;
+            // $data['total'] = $count;
+
+            return response()->json([
+                "message"   => "GET Berhasil",
+                "status"    => 1,
+                "data"      => $data,
+                "totalRow"  => $count,
+                "total"     => $countTotal,
+                "totalData" => $countNotFilter
+            ], 200);
+        } catch (\Throwable $th) {
+            $datas['message']    =   'GET Gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $datas,
+                'error'     => $th
+            ], 200);
+        }
+    }
+
+    function previewMyImplementation($id) {
+        try {
+            $model = Implementation::where('id', $id);
+
+            $datas = $model->first();
+            if (!$datas) {
+                $data_error['message'] = 'Proyek tidak ditemukan!';
+                $data_error['error_code'] = 1;
+                return response()->json([
+                    'status' => 0,
+                    'data'  => $data_error
+                ], 400);
+            }
+
+            if ($datas['status'] == 'publish'){
+                $updateDetails['views'] = $datas->views + 1;
+                    $model->update($updateDetails);
+            }
+
+            $data_upd = $model->first();
+
+            return response()->json([
+                "status"    => 1,
+                "data"      => $data_upd,
+            ],200);
+        } catch (\Throwable $th) {
+            $data['message']    =   'Update gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $data,
+                'error'     => $th
+            ],200);
+        }
+
+    }
+
+    public function preview($slug)
+    {
+        $sample = Project::with(['consultant','divisi','keywords','lesson_learned','project_managers','document','comment' => function($q){
+            $q->where('parent_id',null);
+            $q->orderby('created_at','desc');
+            $q->with(['child' => function($q2){
+                $q2->orderby('created_at','desc');
+            }]);
+        }])->where('slug',$slug)->first();
+        $q = Project::with(['user_restrict'])->where('slug',$slug)->first();
+        $is_allowed = 0; //dilarang
+        if ($q->is_restricted == 1) { //ketika PROJECT INI SIFATNYA RESTRICTED maka di cek siapa aja yg boleh liat
+            if (!empty($q->user_restrict)){ //cek table restriction yg di allow disana siapa aja
+                foreach ($q->user_restrict as $restricted) {
+                    if($restricted->user_id == Auth::user()->personal_number) { //ketika yg di allow match dengan yg lagi login maka..
+                        $is_allowed = 1; //diizinkan
+                        break;
+                    }
+                }
+            }
+        } else { //jika tidak bersifat RESTRICTED maka siapa saja yg akses dengan user apapun bisa lolos liat
+            $is_allowed = 1;
+        }
+
+        $is_favorit = false;
+        if ($sample->favorite_project) {
+            foreach ($sample->favorite_project as $fav) {
+                if ($fav->user_id == Auth::user()->id) {
+                    $is_favorit = true;
+                    break;
+                }
+            }
+        }
+
+        // ----------------------------------
+        // log pencarian
+        $log['project_id'] = $sample->id;
+        $log['user_id'] = Auth::user()->id;
+        Search_log::create($log);
+        // ----------------------------------
+
+        try {
+            $data['message']        =   'GET Berhasil.';
+            $data['data']           =   $sample;
+            $data['is_favorit']     =   $is_favorit;
+            $data['is_allowed']     =   $is_allowed??0;
+            $data['tgl_mulai']      =   $sample->tanggal_mulai;
+            $data['tgl_selesai']    =   $sample->tanggal_selesai;
+            return response()->json([
+                "status"    => 1,
+                "data"      => $data
+            ],200);
+        } catch (\Throwable $th) {
+            $datas['message']    =   'GET Gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $datas
+            ],200);
+        }
+    }
+
+    public function setStatusImplementation($status, $id)
+    {
+        // try {
             $sekarang = Carbon::now();
 
-            if ($status == 'approve') {
+            if (Auth::User()->role == 3) {
+                $cek    =   Implementation::where('id',$id)->first();
+            }else{
+                $cek    =   Implementation::where('id',$id)->where(function($q){
+                    $q->orWhere('user_maker', Auth::User()->personal_number);
+                    $q->orWhere('user_checker', Auth::User()->personal_number);
+                    $q->orWhere('user_signer', Auth::User()->personal_number);
+                })->first();
+            }
+
+            if ($status == 'review') {
                 $updateDetails = [
                     'status'        =>  $status,
                     'approve_at'    =>  $sekarang,
                     'approve_by'    =>  Auth::User()->personal_number,
                 ];
+                // buat user
+                $Notifikasi         = notifikasi::create([
+                    'user_id'      =>  $cek->user_maker,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation Sedang Dicheck',
+                    'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Akan Di <b class='text-info'>Check</b> Oleh <b>".$cek->userchecker->name."</b>",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
+                // buat checker
+                $Notifikasi   = notifikasi::create([
+                    'user_id'      =>  $cek->user_checker,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation Baru Diminta Melakukan Pengecheckan',
+                    'pesan'        =>  "Terdapat data proyek implementation <b>".$cek->title."</b> yang membutuhkan Approval Anda",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
+            } else if ($status == 'checked') {
+                $updateDetails = [
+                    'status'        =>  $status,
+                    'approve_at'    =>  $sekarang,
+                    'approve_by'    =>  Auth::User()->personal_number,
+                ];
+                // buat user
+                $Notifikasi         = notifikasi::create([
+                    'user_id'      =>  $cek->user_maker,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation Sedang Disigner',
+                    'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Akan Di <b class='text-info'>Signer</b> Oleh <b>".$cek->usersigner->name."</b>",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
+                // buat signer
+                $Notifikasi   = notifikasi::create([
+                    'user_id'      =>  $cek->user_signer,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation Baru Diminta Melakukan Penandatangan',
+                    'pesan'        =>  "Terdapat data proyek implementation <b>".$cek->title."</b> yang membutuhkan Approval Anda",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
+            } else if ($status == 'approve') {
+                $updateDetails = [
+                    'status'        =>  $status,
+                    'approve_at'    =>  $sekarang,
+                    'approve_by'    =>  Auth::User()->personal_number,
+                ];
+                $Notifikasi         = notifikasi::create([
+                    'user_id'      =>  $cek->user_maker,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation Telah Disetujui',
+                    'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Telah Di <b class='text-info'>Setujui</b> Oleh <b>".$cek->usersigner->name."</b>",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
             } else if ($status == 'publish') {
                 $updateDetails = [
                     'status'        =>  $status,
                     'publish_at'    =>  $sekarang,
                     'publish_by'    =>  Auth::User()->personal_number
                 ];
+                $Notifikasi         = notifikasi::create([
+                    'user_id'      =>  $cek->user_maker,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation Telah Terpublish',
+                    'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Telah Di <b class='text-info'>Publish</b> Oleh <b>Admin</b>",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
             } else if ($status == 'reject') {
                 $updateDetails = [
                     'status'        =>  $status,
@@ -424,14 +646,14 @@ class ManageComSupport extends Controller
                 "status"    => 1,
                 "data"      => $data,
             ], 200);
-        } catch (\Throwable $th) {
-            $data['message']    =   ucwords($status) . ' Proyek Gagal';
-            $data['toast']      =   ucwords($status) == 'Publish' ? 'Project gagal diterbitkan!' : ucwords($status) . ' Proyek Gagal.';
-            return response()->json([
-                'status'    =>  0,
-                'data'      =>  $data
-            ], 200);
-        }
+        // } catch (\Throwable $th) {
+        //     $data['message']    =   ucwords($status) . ' Proyek Gagal';
+        //     $data['toast']      =   ucwords($status) == 'Publish' ? 'Project gagal diterbitkan!' : ucwords($status) . ' Proyek Gagal.';
+        //     return response()->json([
+        //         'status'    =>  0,
+        //         'data'      =>  $data
+        //     ], 200);
+        // }
     }
 
     public function deleteImplementation($id)
