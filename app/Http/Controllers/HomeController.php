@@ -664,8 +664,8 @@ class HomeController extends Controller
     public function countInitiative($stage="default"){
         try {
 
-            $urlFE = config('app.FE_url').'project';
-            $query = CommunicationSupport::without(['attach_file', 'project'])
+            $urlFE = config('app.FE_url').'mycomsupport/strategic';
+            $query = CommunicationSupport::where('status', 'publish')->without(['attach_file', 'project'])
                 ->join('projects', 'communication_support.project_id', '=', 'projects.id')
                 ->select(DB::raw("projects.nama, sum(communication_support.views) as jml, 
                 CONCAT_WS('/', '{$urlFE}', projects.slug) AS url"))

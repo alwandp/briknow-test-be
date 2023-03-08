@@ -30,7 +30,7 @@ class MyProjectController extends Controller
             })->orderBy('created_at', 'DESC')->get();
         }elseif (Auth::User()->role == 3) {
             $temp = [3,4,5,6];
-            $query = Project::with(['consultant','divisi','keywords', 'lesson_learned','project_managers', 'document'])->whereIn('flag_mcs', $temp)->orderBy('created_at', 'DESC')->get();
+            $query = Project::with(['consultant','divisi','keywords', 'project_managers', 'document'])->without('lesson_learned')->whereIn('flag_mcs', $temp)->orderBy('created_at', 'DESC')->get();
         }
 
         try {

@@ -474,16 +474,19 @@ class LaporanController extends Controller
             $b = Implementation::without(['attach_file', 'project', 'project_managers', 'userchecker', 'usersigner', 'consultant', 'piloting', 'rollout', 'sosialisasi'])
                 ->select(DB::raw("'Roll-Out' as tahap, coalesce(sum(views), 0) as jml"))
                 ->whereNotNull('desc_roll_out')
+                ->where('status_roll_out','publish')
                 ->groupBy("tahap");
 
             $c = Implementation::without(['attach_file', 'project', 'project_managers', 'userchecker', 'usersigner', 'consultant', 'piloting', 'rollout', 'sosialisasi'])
                 ->select(DB::raw("'Sosialisasi' as tahap, coalesce(sum(views), 0) as jml"))
                 ->whereNotNull('desc_sosialisasi')
+                ->where('status_sosialisasi','publish')
                 ->groupBy("tahap");
 
             $dataImp = Implementation::without(['attach_file', 'project', 'project_managers', 'userchecker', 'usersigner', 'consultant', 'piloting', 'rollout', 'sosialisasi'])
                 ->select(DB::raw("'Piloting' as tahap, coalesce(sum(views), 0) as jml"))
                 ->whereNotNull('desc_piloting')
+                ->where('status_piloting','publish')
                 ->union($b)
                 ->union($c)
                 ->groupBy("tahap")

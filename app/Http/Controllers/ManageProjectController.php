@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CommunicationSupport;
 use App\Events\TriggerActivityEvent;
+use App\Implementation;
 use App\Notifikasi;
 use App\Project;
 use Carbon\Carbon;
@@ -391,7 +392,8 @@ class ManageProjectController extends Controller
     {
         try {
             $query = Project::find($id);
-	    $query->lesson_learned()->delete();
+	        $query->lesson_learned()->delete();
+            $query->implementation()->delete();
             $query->delete();
 
             DB::table('projects')->update(array('flag_es' => NULL));
@@ -403,8 +405,6 @@ class ManageProjectController extends Controller
                     'deleted_by' => Auth::User()->personal_number, 'updated_by' => Auth::User()->personal_number]);
             }
 
-            // refresh ES
-            //$this->reloadES();
             $data['message']    =   'Delete Berhasil.';
             return response()->json([
                 "status"    => 1,
@@ -412,6 +412,38 @@ class ManageProjectController extends Controller
             ],200);
         } catch (\Throwable $th) {
             $data['message']    =   'Delete Gagal';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $data
+            ],200);
+        }
+    }
+
+    public function hapusContentByProject($id)
+    {
+        try {
+            $cominit_cek = CommunicationSupport::where('project_id', $id)->get();
+            $impl_cek = Implementation::where('project_id', $id)->get();
+
+            if (!is_null($cominit_cek)) {
+                $sekarang = Carbon::now();
+                CommunicationSupport::where('project_id', $id)->update(['status' => 'deleted', 'deleted_at' => $sekarang,
+                    'deleted_by' => Auth::User()->personal_number, 'updated_by' => Auth::User()->personal_number]);
+            }
+
+            if (!is_null($impl_cek)) {
+                $sekarang = Carbon::now();
+                Implementation::where('project_id', $id)->update(['status' => 'deleted', 'deleted_at' => $sekarang,
+                    'deleted_by' => Auth::User()->personal_number, 'updated_by' => Auth::User()->personal_number]);
+            }
+
+            $data['message']    =   'Delete Konten Project Berhasil.';
+            return response()->json([
+                "status"    => 1,
+                "data"      => $data,
+            ],200);
+        } catch (\Throwable $th) {
+            $data['message']    =   'Delete Konten Project Gagal';
             return response()->json([
                 'status'    =>  0,
                 'data'      =>  $data

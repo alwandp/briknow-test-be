@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Restriction extends Model
 {
     protected $fillable = [
-        'user_id', 'project_id'
+        'user_id', 'project_id', 'implementation_id'
     ];
 
-    protected $with = ['user', 'project'];
+    protected $with = ['user', 'project', 'implementation'];
 
     public function user()
     {
@@ -20,5 +20,10 @@ class Restriction extends Model
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function implementation()
+    {
+        return $this->belongsTo(Implementation::class, 'implementation_id');
     }
 }

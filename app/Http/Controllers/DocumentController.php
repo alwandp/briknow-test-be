@@ -58,11 +58,16 @@ class DocumentController extends Controller
      * @param  \App\document  $document
      * @return \Illuminate\Http\Response
      */
-    public function show(Document $document)
+    public function show()
     {
-        //
+        $documents= Document::all();
+        return response()->json($documents);
     }
 
+    public function imp(){
+        $imp= AttachFile::all();
+        return response()->json($imp);
+    }
     /**
      * Show the form for editing the specified resource.
      *

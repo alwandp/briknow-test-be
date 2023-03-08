@@ -30,6 +30,9 @@ use Illuminate\Support\Facades\Route;
         Route::post('/searchproject','DownloadController@searchproject');
         Route::post('/search/','PencarianController@cariall');
         Route::post('/managedocument','DocumentController@index');
+        Route::get('/documents','DocumentController@show');
+        Route::get('/imp','DocumentController@imp');
+        
 
     // #WEB
         //#ADMIN
@@ -84,6 +87,7 @@ use Illuminate\Support\Facades\Route;
                 Route::post('/manageproject/review/publish/{id}','ManageProjectController@publish');
                 Route::post('/manageproject/review/unpublish/{id}','ManageProjectController@unpublish');
                 Route::delete('/manageproject/review/destroy/{id}','ManageProjectController@hapus');
+                Route::delete('/manageproject/strategic/destroy/{id}','ManageProjectController@hapusContentByProject');
                 Route::get('/manageproject/review/{fil_div}/{fil_kon}/{search}','ManageProjectController@review_content');
                 Route::get('/manageproject/sort/{by}','ManageProjectController@sort');
                 Route::get('/manageproject/sortpass/{by}','ManageProjectController@sortpass'); //untested
@@ -101,6 +105,8 @@ use Illuminate\Support\Facades\Route;
                 Route::get('/implementation/{step}', 'ManageComSupport@getAllImplementation');
                 Route::post('/implementation/status/{status}/{id}', 'ManageComSupport@setStatusImplementation');
                 Route::delete('/implementation/delete/{id}', 'ManageComSupport@deleteImplementation');
+                Route::get('/myimplementation', 'ManageComSupport@getMyImplementation');
+                Route::get('/myimplementation/preview/{id}', 'ManageComSupport@previewMyImplementation');
 
                 Route::get('/form_upload/content/{slug}', 'ManageComSupport@form_content');
                 Route::get('/form_upload/implementation/{slug}', 'ManageComSupport@form_implementation');

@@ -58,48 +58,44 @@ class CommunicationSupportController extends Controller {
             }
 
             if ($request->get('divisi')) {
-                $where_in = explode(",", $request->get('divisi'));
-                $model->whereHas('project', function ($q) use ($where_in) {
-                    $q->where('divisi_id', $where_in);
-                });
+                $div = $request->get('divisi');
+                if ($div !== 'init') {
+                    $model->whereHas('project', function ($q) use ($div) {
+                        $q->where('divisi_id', $div);
+                    });
+                } else {
+                    $model->whereHas('project');
+                }
             }
 
             if ($request->get('direktorat')) {
                 $dir = $request->get('direktorat');
-                $dir = str_replace('-', ' ', $dir);
-                $dir = str_replace('%20', ' ', $dir);
-
-
-                if ($dir === 'NULL') {
-                    $queryDiv = Divisi::where('direktorat', NULL)->get();
+                if ($dir == 'general') {
+                    $model->where('project_id', null);
+                } else if ($dir == 'init') {
+                    $model->whereHas('project', function ($q) {
+                        $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                        $q->where('divisis.direktorat', 0);
+                    });
                 } else {
-                    $queryDiv = Divisi::where('direktorat', 'like', '%' . $dir . '%')->get();
+                    $model->whereHas('project', function ($q) use ($dir) {
+                        $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                        $q->where('divisis.direktorat', $dir);
+                    });
                 }
-
-                $temp = [];
-                foreach ($queryDiv as $itemDiv) {
-                    $temp[] = $itemDiv->id;
-                }
-                $model->whereHas('project', function ($q) use ($temp) {
-                    $q->whereIn('divisi_id', $temp);
-                });
             }
 
-            $total = $model->get();
-            $data = $model->paginate(12);
+            $data = $model->paginate(9);
+            $count = count($data);
 
-            $count = count(array($data));
-            $countTotal = count($total);
-            $countNotFilter = CommunicationSupport::with(['attach_file'])
-                ->where('type_file', $type)->where('status',  'publish')->count();
+            $paginate   = view('cominit_public.paginate',compact('data'))->render();
+            $data['paginate'] = $paginate;
+            $data['total'] = $count;
 
             return response()->json([
                 "message"   => "GET Berhasil",
                 "status"    => 1,
-                "data"      => $data,
-                "totalRow"  => $count,
-                "total"     => $countTotal,
-                "totalData" => $countNotFilter
+                "data"      => $data
             ], 200);
         } catch (\Throwable $th) {
             $datas['message']    =   'GET Gagal';
@@ -117,6 +113,7 @@ class CommunicationSupportController extends Controller {
             $tahun      = $request->year;
             $bulan      = $request->month;
             $divisi     = $request->divisi;
+            $dir        = $request->direktorat;
             $sort       = $request->sort;
             $search     = $request->search;
             $tahap      = $request->tahap;
@@ -125,8 +122,8 @@ class CommunicationSupportController extends Controller {
             $where_in_year = explode(",", $request->get('year'));
             $where_in_month = explode(",", $request->get('month'));
 
-            $implementation = Implementation::join('projects', 'implementation.project_id', '=', 'projects.id')->where('status', 'publish')
-                            ->select(DB::raw('distinct project_id'), DB::raw('projects.nama as nama, projects.slug as slug, projects.thumbnail, max(implementation.created_at) as created_at'))
+            $implementation = Implementation::join('projects', 'implementation.project_id', '=', 'projects.id')->join('divisis', 'projects.divisi_id', '=', 'divisis.id')->where('status', 'publish')
+                            ->select(DB::raw('distinct project_id'), DB::raw('projects.nama as nama, projects.slug as slug, projects.thumbnail, max(implementation.created_at) as created_at, divisis.direktorat as direktorat'))
                             ->groupBy('implementation.project_id')->where('status', 'publish');
 
             // $publish = fn ($q) => $q->where('status', 'publish');
@@ -135,28 +132,7 @@ class CommunicationSupportController extends Controller {
                 $q->where('projects.nama', 'LIKE', '%' . $search . '%');
             };
 
-            if ($request->get('direktorat')) {
-                $dir = $request->get('direktorat');
-                $dir = str_replace('-', ' ', $dir);
-                $dir = str_replace('%20', ' ', $dir);
-
-
-                if ($dir === 'NULL') {
-                    $queryDiv = Divisi::where('direktorat', NULL)->get();
-                } else {
-                    $queryDiv = Divisi::where('direktorat', 'like', '%' . $dir . '%')->get();
-                }
-
-                $temp = [];
-                foreach ($queryDiv as $itemDiv) {
-                    $temp[] = $itemDiv->id;
-                }
-
-                $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->whereIn('divisi_id', $temp)
-                        ->orderBy('created_at', 'desc');
-            }
-
-            $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->orderBy('created_at', 'desc');
+            $query = Project::whereHas('communication_support', $publish)->orWhereHas('implementation', $publish)->orderBy('projects.created_at', 'desc');
 
             if (!empty($sort)) {
                 if ($sort == 'nama') {
@@ -170,7 +146,6 @@ class CommunicationSupportController extends Controller {
 
             if (!empty($search)) {
                 $query->reorder('created_at', 'desc');
-                // $query = Project::whereHas('communication_support', $cariProject)->orWhereHas('implementation', $cariProject)->orderBy('created_at', 'desc');
             }
 
             if (!empty($tahun)) {
@@ -181,95 +156,264 @@ class CommunicationSupportController extends Controller {
                 $query->whereIn(DB::raw('month(created_at)'), $where_in_month)->reorder('created_at', 'desc');
             }
 
+            if (!empty($dir)) {
+                if ($dir !== 'init') {
+                    $query->where('direktorat', $dir);
+                    $query = Project::whereHas('communication_support', function ($q) use ($dir) {
+                            $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                            $q->where('direktorat', $dir);
+                            $q->where('communication_support.status', 'publish');
+                        })->orWhereHas('implementation', function ($q) use ($dir) {
+                            $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                            $q->where('direktorat', $dir);
+                            $q->where('implementation.status', 'publish');
+                        });
+                    $query->reorder('created_at', 'desc');
+
+                    if (!empty($sort)) {
+                        if ($sort == 'nama') {
+                            $query->reorder('nama', 'asc');
+                        } elseif ($sort == 'created_at') {
+                            $query->reorder('created_at', 'desc');
+                        } else {
+                            $query->reorder('created_at', 'desc');
+                        }
+                    }
+        
+                    if (!empty($search)) {
+                        $query->where('nama', 'LIKE', '%' . $search . '%');
+                    }
+        
+                    if (!empty($tahun)) {
+                        $query->whereIn(DB::raw('year(created_at)'), $where_in_year)->reorder('created_at', 'desc');
+                    }
+        
+                    if (!empty($bulan)) {
+                        $query->whereIn(DB::raw('month(created_at)'), $where_in_month)->reorder('created_at', 'desc');
+                    }
+                } else {
+                    $query = Project::whereHas('communication_support', function ($q) {
+                        $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                        $q->where('direktorat', 0);
+                        $q->where('communication_support.status', 'publish');
+                    })->orWhereHas('implementation', function ($q) {
+                        $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                        $q->where('direktorat', 0);
+                        $q->where('implementation.status', 'publish');
+                    });
+                    $query->reorder('created_at', 'desc');
+
+                    if (!empty($sort)) {
+                        if ($sort == 'nama') {
+                            $query->reorder('nama', 'asc');
+                        } elseif ($sort == 'created_at') {
+                            $query->reorder('created_at', 'desc');
+                        } else {
+                            $query->reorder('created_at', 'desc');
+                        }
+                    }
+        
+                    if (!empty($search)) {
+                        $query->where('nama', 'LIKE', '%' . $search . '%');
+                    }
+        
+                    if (!empty($tahun)) {
+                        $query->whereIn(DB::raw('year(created_at)'), $where_in_year)->reorder('created_at', 'desc');
+                    }
+        
+                    if (!empty($bulan)) {
+                        $query->whereIn(DB::raw('month(created_at)'), $where_in_month)->reorder('created_at', 'desc');
+                    }
+                }
+            }
+
             if (!empty($divisi)) {
-                $query->whereIn('divisi_id', $where_in)->reorder('created_at', 'desc');
+                if ($divisi !== 'init') {
+                    $query = Project::whereHas('communication_support', function ($q) use ($divisi) {
+                        $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                        $q->where('divisi_id', $divisi);
+                        $q->where('communication_support.status', 'publish');
+                    })->orWhereHas('implementation', function ($q) use ($divisi) {
+                        $q->join('divisis', 'projects.divisi_id', '=', 'divisis.id');
+                        $q->where('divisi_id', $divisi);
+                        $q->where('implementation.status', 'publish');
+                    });
+                    $query->reorder('created_at', 'desc');
+
+                    if (!empty($sort)) {
+                        if ($sort == 'nama') {
+                            $query->reorder('nama', 'asc');
+                        } elseif ($sort == 'created_at') {
+                            $query->reorder('created_at', 'desc');
+                        } else {
+                            $query->reorder('created_at', 'desc');
+                        }
+                    }
+        
+                    if (!empty($search)) {
+                        $query->where('nama', 'LIKE', '%' . $search . '%');
+                    }
+        
+                    if (!empty($tahun)) {
+                        $query->whereIn(DB::raw('year(created_at)'), $where_in_year)->reorder('created_at', 'desc');
+                    }
+        
+                    if (!empty($bulan)) {
+                        $query->whereIn(DB::raw('month(created_at)'), $where_in_month)->reorder('created_at', 'desc');
+                    }
+                } else {
+                    $query = Project::whereHas('communication_support', function ($q) {
+                        $q->where('communication_support.status', 'publish');
+                    })->orWhereHas('implementation', function ($q) {
+                        $q->where('implementation.status', 'publish');
+                    });
+                    $query->reorder('created_at', 'desc');
+
+                    if (!empty($sort)) {
+                        if ($sort == 'nama') {
+                            $query->reorder('nama', 'asc');
+                        } elseif ($sort == 'created_at') {
+                            $query->reorder('created_at', 'desc');
+                        } else {
+                            $query->reorder('created_at', 'desc');
+                        }
+                    }
+        
+                    if (!empty($search)) {
+                        $query->where('nama', 'LIKE', '%' . $search . '%');
+                    }
+        
+                    if (!empty($tahun)) {
+                        $query->whereIn(DB::raw('year(created_at)'), $where_in_year)->reorder('created_at', 'desc');
+                    }
+        
+                    if (!empty($bulan)) {
+                        $query->whereIn(DB::raw('month(created_at)'), $where_in_month)->reorder('created_at', 'desc');
+                    }
+                }
             }
 
             if (!empty($tahap)) {
                 if ($tahap == 'piloting') {
                     if (!empty($sort)) {
                         if ($sort == 'nama') {
-                            $query = $implementation->whereNotNull('desc_piloting')->orderBy('nama', 'asc');
+                            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('nama', 'asc');
                         } elseif ($sort == 'created_at') {
-                            $query = $implementation->whereNotNull('desc_piloting')->orderBy('created_at', 'desc');
+                            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('created_at', 'desc');
                         } else {
-                            $query = $implementation->whereNotNull('desc_piloting')->orderBy('created_at', 'desc');
+                            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('created_at', 'desc');
                         }
                     }
 
                     if (!empty($search)) {
-                        $query = $implementation->whereNotNull('desc_piloting')->where('nama', 'LIKE', '%' . $search . '%');
+                        $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('nama', 'LIKE', '%' . $search . '%');
                     }
 
                     if (!empty($tahun)) {
-                        $query = $implementation->whereNotNull('desc_piloting')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year)->orderBy('created_at', 'desc');
+                        $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year)->orderBy('created_at', 'desc');
                     }
 
                     if (!empty($bulan)) {
-                        $query = $implementation->whereNotNull('desc_piloting')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month)->orderBy('created_at', 'desc');
+                        $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month)->orderBy('created_at', 'desc');
+                    }
+
+                    if (!empty($dir)) {
+                        if ($dir !== 'init') {
+                            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('direktorat', $dir)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('direktorat', 0)->orderBy('created_at', 'desc');
+                        }
                     }
 
                     if (!empty($divisi)) {
-                        $query = $implementation->whereNotNull('desc_piloting')->whereIn('projects.divisi_id', $where_in)->orderBy('created_at', 'desc');
+                        if ($divisi !== 'init') {
+                            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('projects.divisi_id', $divisi)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('created_at', 'desc');
+                        }
                     }
 
-                    $query = $implementation->whereNotNull('desc_piloting')->orderBy('created_at', 'desc');
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('created_at', 'desc');
                 } elseif ($tahap == 'roll-out') {
                     if (!empty($sort)) {
                         if ($sort == 'nama') {
-                            $query = $implementation->whereNotNull('desc_roll_out')->orderBy('nama', 'asc');
+                            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('nama', 'asc');
                         } elseif ($sort == 'created_at') {
-                            $query = $implementation->whereNotNull('desc_roll_out')->orderBy('created_at', 'desc');
+                            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('created_at', 'desc');
                         } else {
-                            $query = $implementation->whereNotNull('desc_roll_out')->orderBy('created_at', 'desc');
+                            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('created_at', 'desc');
                         }
                     }
 
                     if (!empty($search)) {
-                        $query = $implementation->whereNotNull('desc_roll_out')->where('nama', 'LIKE', '%' . $search . '%');
+                        $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('nama', 'LIKE', '%' . $search . '%');
                     }
 
                     if (!empty($tahun)) {
-                        $query = $implementation->whereNotNull('desc_roll_out')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year)->orderBy('created_at', 'desc');
+                        $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year)->orderBy('created_at', 'desc');
                     }
 
                     if (!empty($bulan)) {
-                        $query = $implementation->whereNotNull('desc_roll_out')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month)->orderBy('created_at', 'desc');
+                        $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month)->orderBy('created_at', 'desc');
+                    }
+
+                    if (!empty($dir)) {
+                        if ($dir !== 'init') {
+                            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('direktorat', $dir)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('direktorat', 0)->orderBy('created_at', 'desc');
+                        }
                     }
 
                     if (!empty($divisi)) {
-                        $query = $implementation->whereNotNull('desc_roll_out')->whereIn('projects.divisi_id', $where_in)->orderBy('created_at', 'desc');
+                        if ($divisi !== 'init') {
+                            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('projects.divisi_id', $divisi)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('created_at', 'desc');
+                        }
                     }
 
-                    $query = $implementation->whereNotNull('desc_roll_out')->orderBy('created_at', 'desc');
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('created_at', 'desc');
                 } elseif ($tahap == 'sosialisasi') {
                     if (!empty($sort)) {
                         if ($sort == 'nama') {
-                            $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('nama', 'asc');
+                            $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('nama', 'asc');
                         } elseif ($sort == 'created_at') {
-                            $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('created_at', 'desc');
+                            $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('created_at', 'desc');
                         } else {
-                            $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('created_at', 'desc');
+                            $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('created_at', 'desc');
                         }
                     }
 
                     if (!empty($search)) {
-                        $query = $implementation->whereNotNull('desc_sosialisasi')->where('nama', 'LIKE', '%' . $search . '%');
+                        $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('nama', 'LIKE', '%' . $search . '%');
                     }
 
                     if (!empty($tahun)) {
-                        $query = $implementation->whereNotNull('desc_sosialisasi')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year)->orderBy('created_at', 'desc');
+                        $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year)->orderBy('created_at', 'desc');
                     }
 
                     if (!empty($bulan)) {
-                        $query = $implementation->whereNotNull('desc_sosialisasi')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month)->orderBy('created_at', 'desc');
+                        $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month)->orderBy('created_at', 'desc');
+                    }
+
+                    if (!empty($dir)) {
+                        if ($dir !== 'init') {
+                            $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('direktorat', $dir)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('direktorat', 0)->orderBy('created_at', 'desc');
+                        }
                     }
 
                     if (!empty($divisi)) {
-                        $query = $implementation->whereNotNull('desc_sosialisasi')->whereIn('projects.divisi_id', $where_in)->orderBy('created_at', 'desc');
+                        if ($divisi !== 'init') {
+                            $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('projects.divisi_id', $divisi)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('created_at', 'desc');
+                        }
                     }
 
-                    $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('created_at', 'desc');
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('created_at', 'desc');
                 } elseif ($tahap == 'all') {
                     if (!empty($sort)) {
                         if ($sort == 'nama') {
@@ -293,26 +437,37 @@ class CommunicationSupportController extends Controller {
                         $query = $implementation->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month)->orderBy('created_at', 'desc');
                     }
 
+                    if (!empty($dir)) {
+                        if ($dir !== 'init') {
+                            $query = $implementation->where('direktorat', $dir)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->where('direktorat', 0)->orderBy('created_at', 'desc');
+                        }
+                    }
+
                     if (!empty($divisi)) {
-                        $query = $implementation->whereIn('projects.divisi_id', $where_in)->orderBy('created_at', 'desc');
+                        if ($divisi !== 'init') {
+                            $query = $implementation->where('projects.divisi_id', $divisi)->orderBy('created_at', 'desc');
+                        } else {
+                            $query = $implementation->orderBy('created_at', 'desc');
+                        }
                     }
 
                     $query = $implementation->orderBy('created_at', 'desc');
                 }
             }
 
-            $data = $query->get();
+            $data = $query->paginate(9);
             $count = count($data);
-            $countNotFilter = Project::whereHas('communication_support', function ($q) {
-                $q->where('status', 'publish');
-            })->count();
+
+            $paginate   = view('strategic_public.paginate',compact('data'))->render();
+            $data['paginate'] = $paginate;
+            $data['total'] = $count;
 
             return response()->json([
                 "message"   => "GET Berhasil",
                 "status"    => 1,
-                "data"      => $data,
-                "total"     => $count,
-                "totalData" => $countNotFilter
+                "data"      => $data
             ], 200);
         } catch (\Throwable $th) {
             $datas['message']    =   'GET Gagal';
@@ -345,9 +500,9 @@ class CommunicationSupportController extends Controller {
                 ], 400);
             }
             $data['project'] = $project;
-            $piloting = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_piloting')->orderBy('created_at', 'desc')->take(5)->get();
-            $rollOut = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_roll_out')->orderBy('created_at', 'desc')->take(5)->get();
-            $sosialisasi = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_sosialisasi')->orderBy('created_at', 'desc')->take(5)->get();
+            $piloting = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('created_at', 'desc')->take(5)->get();
+            $rollOut = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('created_at', 'desc')->take(5)->get();
+            $sosialisasi = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('created_at', 'desc')->take(5)->get();
             $data['piloting'] = $piloting;
 	    $data['roll_out'] = $rollOut;
             $data['sosialisasi'] = $sosialisasi;
@@ -495,6 +650,7 @@ class CommunicationSupportController extends Controller {
     {
         $tahun      = $request->year;
         $month      = $request->month;
+        $dir        = $request->direktorat;
         $divisi     = $request->divisi;
         $sort       = $request->sort;
         $search     = $request->search;
@@ -503,108 +659,120 @@ class CommunicationSupportController extends Controller {
         $where_in_month = explode(",", $month);
         $where_in = explode(",", $divisi);
 
-        if ($request->get('direktorat')) {
-            $dir = $request->get('direktorat');
-            $dir = str_replace('-', ' ', $dir);
-            $dir = str_replace('%20', ' ', $dir);
-
-            if ($dir === 'NULL') {
-                $queryDiv = Divisi::where('direktorat', NULL)->get();
-            } else {
-                $queryDiv = Divisi::where('direktorat', 'like', '%' . $dir . '%')->get();
-            }
-
-            $temp = [];
-            foreach ($queryDiv as $itemDiv) {
-                $temp[] = $itemDiv->id;
-            }
-
-            $query = Implementation::with(['favorite_implementation' => function ($q) {
-                $q->where('user_id', Auth::user()->id);
-            }])->join('projects', 'implementation.project_id', '=', 'projects.id')->where('status', 'publish')
-                ->select(DB::raw('implementation.id, implementation.title, implementation.thumbnail, implementation.desc_piloting, 
-            implementation.desc_roll_out, implementation.desc_sosialisasi, implementation.views, implementation.slug'))
-                ->whereNotNull('desc_piloting')->whereIn('projects.divisi_id', $temp)->orderBy('implementation.created_at', 'desc');
-        }
-
         $implementation = Implementation::with(['favorite_implementation' => function ($q) {
                 $q->where('user_id', Auth::user()->id);
-            }])->join('projects', 'implementation.project_id', '=', 'projects.id')->where('status', 'publish')
+            }])->join('projects', 'implementation.project_id', '=', 'projects.id')->join('divisis', 'projects.divisi_id', '=', 'divisis.id')->where('status', 'publish')
             ->select(DB::raw('implementation.id, implementation.title, implementation.thumbnail, implementation.desc_piloting, 
-            implementation.desc_roll_out, implementation.desc_sosialisasi, implementation.views, implementation.slug'));
+            implementation.desc_roll_out, implementation.desc_sosialisasi, implementation.views, implementation.slug, divisis.direktorat'));
 
         if ($step == 'piloting') {
             if (!empty($sort)) {
                 if ($sort == 'title') {
-                    $query = $implementation->whereNotNull('desc_piloting')->orderBy('implementation.title', 'asc');
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('implementation.title', 'asc');
                 } elseif ($sort == 'views') {
-                    $query = $implementation->whereNotNull('desc_piloting')->orderBy('implementation.views', 'desc');
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('implementation.views', 'desc');
                 } else {
-                    $query = $implementation->whereNotNull('desc_piloting')->orderBy('implementation.created_at', 'desc');
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('implementation.created_at', 'desc');
                 }
             }
             if (!empty($tahun)) {
-                $query = $implementation->whereNotNull('desc_piloting')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year);
+                $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year);
             }
             if (!empty($month)) {
-                $query = $implementation->whereNotNull('desc_piloting')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month); 
+                $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month); 
+            }
+            if (!empty($dir)) {
+                if ($dir !== 'init') {
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('divisis.direktorat', $dir);
+                } else {
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('divisis.direktorat', 0);
+                }
             }
             if (!empty($divisi)) {
-                $query = $implementation->whereNotNull('desc_piloting')->whereIn('projects.divisi_id', $where_in);
+                if ($divisi !== 'init') {
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('projects.divisi_id', $divisi);
+                } else {
+                    $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish');
+                }
             }
+            // if (!empty($divisi)) {
+            //     $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->whereIn('projects.divisi_id', $where_in);
+            // }
             if (!empty($search)) {
-                $query = $implementation->whereNotNull('desc_piloting')->where('implementation.title', 'like', '%' . $search . '%');
+                $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->where('implementation.title', 'like', '%' . $search . '%');
             }
-            $query = $implementation->whereNotNull('desc_piloting')->orderBy('implementation.created_at', 'desc');
+            $query = $implementation->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('implementation.created_at', 'desc');
 
         } else if ($step == 'roll-out') {
             if (!empty($sort)) {
                 if ($sort == 'title') {
-                    $query = $implementation->whereNotNull('desc_roll_out')->orderBy('implementation.title', 'asc');
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('implementation.title', 'asc');
                 } elseif ($sort == 'views') {
-                    $query = $implementation->whereNotNull('desc_roll_out')->orderBy('implementation.views', 'desc');
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('implementation.views', 'desc');
                 } else {
-                    $query = $implementation->whereNotNull('desc_roll_out')->orderBy('implementation.created_at', 'desc');
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('implementation.created_at', 'desc');
                 }
             }
             if (!empty($tahun)) {
-                $query = $implementation->whereNotNull('desc_roll_out')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year);
+                $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year);
             } 
             if (!empty($month)) {
-                $query = $implementation->whereNotNull('desc_roll_out')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month);
+                $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month);
             } 
-            if (!empty($divisi)) {
-                $query = $implementation->whereNotNull('desc_roll_out')->whereIn('projects.divisi_id', $where_in);
-            } 
-            if (!empty($search)) {
-                $query = $implementation->whereNotNull('desc_roll_out')->where('implementation.title', 'like', '%' . $search . '%');
+            if (!empty($dir)) {
+                if ($dir !== 'init') {
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('divisis.direktorat', $dir);
+                } else {
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('divisis.direktorat', 0);
+                }
             }
-            $query = $implementation->whereNotNull('desc_roll_out')->orderBy('implementation.created_at', 'desc');
+            if (!empty($divisi)) {
+                if ($divisi !== 'init') {
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('projects.divisi_id', $divisi);
+                } else {
+                    $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish');
+                }
+            }
+            if (!empty($search)) {
+                $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->where('implementation.title', 'like', '%' . $search . '%');
+            }
+            $query = $implementation->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('implementation.created_at', 'desc');
 
         } else if ($step == 'sosialisasi') {
             if (empty($tahun) && empty($month) && empty($divisi) && empty($sort) && empty($search)) {
-                $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('implementation.created_at', 'desc');
+                $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('implementation.created_at', 'desc');
             }
             if (!empty($sort)) {
                 if ($sort == 'title') {
-                    $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('implementation.title', 'asc');
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('implementation.title', 'asc');
                 } elseif ($sort == 'views') {
-                    $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('implementation.views', 'desc');
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('implementation.views', 'desc');
                 } else {
-                    $query = $implementation->whereNotNull('desc_sosialisasi')->orderBy('implementation.created_at', 'desc');
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('implementation.created_at', 'desc');
                 }
             } 
             if (!empty($tahun)) {
-                $query = $implementation->whereNotNull('desc_sosialisasi')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year);
+                $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->whereIn(DB::raw('year(implementation.tanggal_mulai)'), $where_in_year);
             }
             if (!empty($month)) {
-                $query = $implementation->whereNotNull('desc_sosialisasi')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month);
+                $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->whereIn(DB::raw('month(implementation.tanggal_mulai)'), $where_in_month);
+            }
+            if (!empty($dir)) {
+                if ($dir !== 'init') {
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('divisis.direktorat', $dir);
+                } else {
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('divisis.direktorat', 0);
+                }
             }
             if (!empty($divisi)) {
-                $query = $implementation->whereNotNull('desc_sosialisasi')->whereIn('projects.divisi_id', $where_in);
+                if ($divisi !== 'init') {
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('projects.divisi_id', $divisi);
+                } else {
+                    $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish');
+                }
             }
             if (!empty($search)) {
-                $query = $implementation->whereNotNull('desc_sosialisasi')->where('implementation.title', 'like', '%' . $search . '%');
+                $query = $implementation->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->where('implementation.title', 'like', '%' . $search . '%');
             }
         } else {
             $datas['message']    =   'GET Gagal';
@@ -616,7 +784,7 @@ class CommunicationSupportController extends Controller {
         }
 
         $total = $query->get();
-        $data = $query->paginate(5);
+        $data = $query->paginate(2);
 
         $count = count($data);
         $countTotal = count($total);
@@ -640,7 +808,18 @@ class CommunicationSupportController extends Controller {
         try {
             $data = Implementation::with(['attach_file', 'consultant','project_managers', 'favorite_implementation' => function ($q) {
                 $q->where('user_id', Auth::user()->id);
-            }])->where('status', 'publish')->where('slug', $slug)->first();
+            }])->where('status', 'publish')->where('slug', $slug)->without('achievement','userchecker','usersigner',)->first();
+
+            // $implementationCheck = Implementation::where('slug', $slug)->first();
+            // if($implementationCheck->status_piloting == 'unpublish'){
+            //     $data->makeHidden('desc_piloting');
+            // }
+            // if($implementationCheck->status_roll_out == 'unpublish'){
+            //     $data->makeHidden('desc_roll_out');
+            // }
+            // if($implementationCheck->status_sosialisasi == 'unpublish'){
+            //     $data->makeHidden('desc_sosialisasi');
+            // }
 
             $is_allowed = 0;
             if ($data->is_restricted == 1) {
@@ -766,7 +945,7 @@ class CommunicationSupportController extends Controller {
     }
 
     function getFileProject($id) {
-        $model = Project::find($id)->first();
+        $model = Project::find($id);
         if (!$model) {
             $data_error['message'] = 'Proyek tidak ditemukan!';
             $data_error['error_code'] = 1;

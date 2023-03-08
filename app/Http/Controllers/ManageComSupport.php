@@ -80,12 +80,14 @@ class ManageComSupport extends Controller
     public function getAllStrategic(Request $request)
     {
         try {
+            $search = $request->get('search');
+            $filter = function ($q) use ($search) {
+                if ($search != '') $q->Where('projects.nama', 'like', '%' . $search . '%');
+            };
             //            $model = CommunicationSupport::with(['attach_file'])->where('communication_support.type_file', $type)->where('communication_support.status', '!=', 'deleted');
             /*$model = Project::join('communication_support', 'projects.id', '=', 'communication_support.project_id')
                 ->where('communication_support.status', '!=', 'deleted');*/
-            $model = Project::whereHas('communication_support', function ($q) {
-                $q->where('status', '!=', 'deleted');
-            });
+            $model = Project::whereHas('communication_support', $filter)->orWhereHas('implementation', $filter);
 
             // $limit = intval($request->get('limit', 10));
             // $offset = intval($request->get('offset', 0));
@@ -97,7 +99,7 @@ class ManageComSupport extends Controller
                 $model->orderBy('projects.created_at', $order);
             }
             if ($request->get('search')) {
-                $model->where('projects.nama', 'like', '%' . $request->get('search') . '%');
+                $model->where('nama', 'like', '%' . $request->get('search') . '%');
             }
 
             $total = $model->get();
@@ -143,40 +145,51 @@ class ManageComSupport extends Controller
                 ["id" => "video", "name" => "Video Content"],
                 ["id" => "instagram", "name" => "Instagram Content"],
             ];
+
             $project        = Project::where('slug', $slug)->first();
             if (!$project) {
                 $data_error['message'] = 'Proyek tidak ditemukan!';
-                $data_error['error_code'] = 1; //error
+                $data_error['error_code'] = 1;
                 return response()->json([
                     'status' => 0,
                     'data'  => $data_error
                 ], 400);
             }
-            $sort = 'created_at';
-            $order = 'desc';
-            if ($request->get('sort')) {
-                $sort = $request->get('sort');
-            }
-            if ($request->get('order')) {
-                $order = $request->get('order');
-            }
+
             $data['project'] = $project;
+            $piloting = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_piloting')->where('status_piloting','publish')->orderBy('created_at', 'desc')->take(5)->get();
+            $rollOut = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_roll_out')->where('status_roll_out','publish')->orderBy('created_at', 'desc')->take(5)->get();
+            $sosialisasi = Implementation::where('project_id', $project->id)->where('status', 'publish')->whereNotNull('desc_sosialisasi')->where('status_sosialisasi','publish')->orderBy('created_at', 'desc')->take(5)->get();
+            $data['piloting'] = $piloting;
+            $data['roll_out'] = $rollOut;
+            $data['sosialisasi'] = $sosialisasi;
+
             $types = CommunicationSupport::where('project_id', $project->id)
                 ->where('status', '!=', 'deleted')->select(DB::raw('type_file, COUNT(id) as total'))
                 ->groupBy('type_file')->orderby('total', 'desc')->get();
 
             $type_file = [];
+            $cominit = [];
             foreach ($types as $r) {
                 $key = array_search($r->type_file, array_column($type_list, 'id'));
-                $datas = CommunicationSupport::where('project_id', $project->id)
-                    ->where('status', '!=', 'deleted')->where('type_file', $r->type_file)
-                    ->orderBy($sort, $order)->take(5)->get();
+
+                if ($request->get('sort')) {
+                    if ($request->get('sort') == 'title') {
+                        $datas = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->orderBy('title', 'asc')->take(5)->get();
+                    } else {
+                        $datas = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->orderBy($request->get('sort'), 'desc')->take(5)->get();
+                    }
+                } else {
+                    $datas = CommunicationSupport::where('project_id', $project->id)->where('status', 'publish')->where('type_file', $r->type_file)->orderBy('created_at', 'desc')->take(5)->get();
+                }
 
                 $type_list[$key]['content'] = $datas;
                 $type_list[$key]['total_content'] = $r->total;
                 $type_file[] = $type_list[$key];
             }
+
             $data['type'] = $type_file;
+            $data['cominit'] = $type_list[$key]['content'];
 
             return response()->json([
                 "message"   => "GET Berhasil",
@@ -533,7 +546,11 @@ class ManageComSupport extends Controller
 
     public function setStatusImplementation($status, $id)
     {
-        // try {
+        try {
+            $note = "";
+            foreach (request()->all() as $key => $val) {
+                $note = $key;
+            }
             $sekarang = Carbon::now();
 
             if (Auth::User()->role == 3) {
@@ -544,6 +561,19 @@ class ManageComSupport extends Controller
                     $q->orWhere('user_checker', Auth::User()->personal_number);
                     $q->orWhere('user_signer', Auth::User()->personal_number);
                 })->first();
+            }
+
+            if (Auth::user()->role <> 3) {
+                $role = 0;
+                if ($cek->user_maker == Auth::user()->personal_number && ($cek->status == 'draft')) {
+                    $role = 0;
+                }elseif($cek->user_checker == Auth::user()->personal_number && ($cek->status == 'review')){
+                    $role = 1;
+                }elseif($cek->user_signer == Auth::user()->personal_number && ($cek->status == 'checked')){
+                    $role = 2;
+                }
+            }else{
+                $role = 3;
             }
 
             if ($status == 'review') {
@@ -608,52 +638,121 @@ class ManageComSupport extends Controller
                     'direct'       =>  config('app.FE_url')."myimplementation",
                     'status'       =>  0,
                 ]);
-            } else if ($status == 'publish') {
+            } else if ($status == 'publish_piloting'){
                 $updateDetails = [
-                    'status'        =>  $status,
-                    'publish_at'    =>  $sekarang,
-                    'publish_by'    =>  Auth::User()->personal_number
+                    'status_piloting' => 'publish'
                 ];
                 $Notifikasi         = notifikasi::create([
                     'user_id'      =>  $cek->user_maker,
                     'kategori'     =>  1,
-                    'judul'        =>  'Proyek Implementation Telah Terpublish',
+                    'judul'        =>  'Proyek Implementation di Tahap Piloting Telah Terpublish',
                     'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Telah Di <b class='text-info'>Publish</b> Oleh <b>Admin</b>",
                     'direct'       =>  config('app.FE_url')."myimplementation",
                     'status'       =>  0,
                 ]);
-            } else if ($status == 'reject') {
+            }else if ($status == 'unpublish_piloting'){
                 $updateDetails = [
-                    'status'        =>  $status,
-                    'reject_at'     =>  $sekarang,
-                    'reject_by'     =>  Auth::User()->personal_number,
+                    'status_piloting' => 'unpublish'
                 ];
-            } else if ($status == 'unpublish') {
+            }else if ($status == 'publish_roll-out'){
                 $updateDetails = [
-                    'status'        =>  $status,
-                    'unpublish_at'  =>  $sekarang,
-                    'unpublish_by'  =>  Auth::User()->personal_number,
+                    'status_roll_out' => 'publish'
                 ];
+                $Notifikasi         = notifikasi::create([
+                    'user_id'      =>  $cek->user_maker,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation di Tahap roll_out Telah Terpublish',
+                    'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Telah Di <b class='text-info'>Publish</b> Oleh <b>Admin</b>",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
+            }else if ($status == 'unpublish_roll-out'){
+                $updateDetails = [
+                    'status_roll_out' => 'unpublish'
+                ];
+            }
+            else if ($status == 'publish_sosialisasi'){
+                $updateDetails = [
+                    'status_sosialisasi' => 'publish'
+                ];
+                $Notifikasi         = notifikasi::create([
+                    'user_id'      =>  $cek->user_maker,
+                    'kategori'     =>  1,
+                    'judul'        =>  'Proyek Implementation di Tahap sosialisasi Telah Terpublish',
+                    'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Telah Di <b class='text-info'>Publish</b> Oleh <b>Admin</b>",
+                    'direct'       =>  config('app.FE_url')."myimplementation",
+                    'status'       =>  0,
+                ]);
+            }else if ($status == 'unpublish_sosialisasi'){
+                $updateDetails = [
+                    'status_sosialisasi' => 'unpublish'
+                ];
+            }
+            else if ($status == 'reject') {
+                if ($role == 1) { //CHECKER
+                    // $cek->status = 'reject';
+                    $updateDetails = [
+                        'status'        =>  'reject',
+                        'reject_at'     =>  $sekarang,
+                        'reject_by'     =>  Auth::User()->personal_number,
+                        'r_note1'       =>  str_replace('_', ' ', $note),
+                    ];
+                    // $cek->r_note1 = request()->note; //CATATAN MENGAPA DIREJECT CHECKER
+        
+                    // reject dari checker
+                    $Notifikasi   = notifikasi::create([
+                        'user_id'      =>  $cek->user_maker,
+                        'kategori'     =>  1,
+                        'judul'        =>  'Proyek Implementation Direject',
+                        'pesan'        =>  "Proyek Implementation Anda Dengan Nama <b>".$cek->title."</b> Telah Di <b class='text-danger'>Reject</b> Oleh <b>".$cek->userchecker->name."</b>",
+                        'direct'       =>  config('app.FE_url')."myimplementation",
+                        'status'       =>  0,
+                    ]);
+                } elseif ($role == 2) { //SIGNER
+                    $updateDetails = [
+                        'status'        =>  $status,
+                        'reject_at'     =>  $sekarang,
+                        'reject_by'     =>  Auth::User()->personal_number,
+                        'r_note2'       =>  str_replace('_', ' ', $note),
+                    ];
+        
+                    // reject dari checker
+                    $Notifikasi   = notifikasi::create([
+                        'user_id'      =>  $cek->user_maker,
+                        'kategori'     =>  1,
+                        'judul'        =>  'Proyek Implementation Direject',
+                        'pesan'        =>  "Proyek Implementation Anda Dengan Nama <b>".$cek->nama."</b> Telah Di <b class='text-danger'>Reject</b> Oleh <b>".$cek->usersigner->name."</b>",
+                        'direct'       =>  config('app.FE_url')."myimplementation",
+                        'status'       =>  0,
+                    ]);
+                }
             }
 
             $updateDetails['updated_by'] = Auth::User()->personal_number;
             Implementation::where('id', $id)
                 ->update($updateDetails);
 
+                $implementation = Implementation::where('id', $id)->first();
+                if(($implementation->status_piloting == 'publish') || ($implementation->status_roll_out == 'publish') || ($implementation->status_sosialisasi == 'publish')){
+                    $updateDetails['status'] = 'publish';
+                }else{
+                    $updateDetails['status'] ='unpublish';
+                }
+            $implementation->update($updateDetails);
             $data['message']    =   ucwords($status) . ' Proyek Berhasil.';
             $data['toast']      =   ucwords($status) == 'Publish' ? 'Proyek berhasil diterbitkan' : ucwords($status) . ' Berhasil.';
             return response()->json([
                 "status"    => 1,
                 "data"      => $data,
             ], 200);
-        // } catch (\Throwable $th) {
-        //     $data['message']    =   ucwords($status) . ' Proyek Gagal';
-        //     $data['toast']      =   ucwords($status) == 'Publish' ? 'Project gagal diterbitkan!' : ucwords($status) . ' Proyek Gagal.';
-        //     return response()->json([
-        //         'status'    =>  0,
-        //         'data'      =>  $data
-        //     ], 200);
-        // }
+        } catch (\Throwable $th) {
+            $data['message']    =   ucwords($status) . ' Proyek Gagal';
+            $data['toast']      =   ucwords($status) == 'Publish' ? 'Project gagal diterbitkan!' : ucwords($status) . ' Proyek Gagal.';
+            return response()->json([
+                'status'    =>  0,
+                'data'      =>  $data
+            ], 200);
+        }
     }
 
     public function deleteImplementation($id)
@@ -1008,22 +1107,10 @@ class ManageComSupport extends Controller
             $project_id = request()->project;
         }
 
-        if ($restricted == 1) {
-            $user     =  request()->user;
-            for ($i = 0; $i < count($user); $i++) {
-                $simpanuser['project_id']   =   $project_id;
-                $simpanuser['user_id']      =   (int)$user[$i];
-                Restriction::create($simpanuser);
-            }
-            $user_access = implode(', ', $user);
-        } else {
-            $user_access = '-';
-        }
-
-        if(request()->has('title')){
+        if (request()->has('title')) {
             $nameImpl = request()->title;
-        }else{
-           $nameImpl = request()->project;
+        } else {
+            $nameImpl = request()->project;
         }
 
         if ($id == "*") {
@@ -1035,14 +1122,45 @@ class ManageComSupport extends Controller
                 'thumbnail'             => request()->thumbnail,
                 'tanggal_mulai'         => request()->tgl_mulai,
                 'tanggal_selesai'       => request()->tgl_selesai,
-                'user_access'           => $user_access,
                 'desc_piloting'         => request()->deskripsi_pilot,
                 'desc_roll_out'         => request()->deskripsi_rollout,
                 'desc_sosialisasi'      => request()->deskripsi_sosialisasi,
                 'project_id'            => $project_id,
+                'is_restricted'         => $restricted,
+                'user_checker'          => $dataChecker->personal_number,
+                'user_signer'           => $dataSigner->personal_number,
+                'user_maker'            => Auth::User()->personal_number
+            ]);
+
+            if ($restricted == 1) {
+                $user     =  request()->user;
+                for ($i = 0; $i < count($user); $i++) {
+                    $simpanuser['implementation_id']   =   $create->id;
+                    $simpanuser['user_id']      =   (int)$user[$i];
+                    Restriction::create($simpanuser);
+                }
+                $user_access = implode(', ', $user);
+            } else {
+                $user_access = '-';
+            }
+
+            $create->update([
+                'title'                 => $nameImpl,
+                'slug'                  => $waktu . "-" . \Str::slug($nameImpl),
+                'project_managers_id'   => $create_pm->id,
+                'status'                => 'review',
+                'thumbnail'             => request()->thumbnail,
+                'tanggal_mulai'         => request()->tgl_mulai,
+                'tanggal_selesai'       => request()->tgl_selesai,
+                'desc_piloting'         => request()->deskripsi_pilot,
+                'desc_roll_out'         => request()->deskripsi_rollout,
+                'desc_sosialisasi'      => request()->deskripsi_sosialisasi,
+                'project_id'            => $project_id,
+                'is_restricted'         => $restricted,
                 'user_checker'          => $dataChecker->personal_number,
                 'user_signer'           => $dataSigner->personal_number,
                 'user_maker'            => Auth::User()->personal_number,
+                'user_access'           => $user_access
             ]);
 
             // attach
@@ -1095,80 +1213,6 @@ class ManageComSupport extends Controller
                             $attach['implementation_id']       = $create->id;
                             $attach['tipe']                    = 'sosialisasi';
                             $attach['nama']                    = $cek->nama_file;
-                            $attach['jenis_file']              = $cek->type;
-                            $attach['url_file']                = $cek->path;
-                            $attach['size']                    = $cek->size;
-                            AttachFile::create($attach);
-
-                            $cek->delete();
-                        }
-                    }
-                }
-            }
-        } else {
-
-            $upd    =   Implementation::where('id', $id)->first();
-            if (!$upd) {
-                $data_error['message'] = 'Implementation Not Found';
-                $data_error['error_code'] = 1; //error
-                return response()->json([
-                    'status' => 0,
-                    'data'  => $data_error
-                ], 400);
-            }
-
-            $data_new['title']                  = request()->title;
-            $data_new['slug']                   = $waktu . "-" . \Str::slug(request()->title);
-            $data_new['project_managers_id']    = $create_pm->id;
-            $data_new['thumbnail']              = request()->thumbnail;
-            $data_new['tanggal_mulai']          = request()->tgl_mulai;
-            $data_new['tanggal_selesai']        = request()->tgl_selesai;
-            $data_new['user_access']            = request()->user;
-            $data_new['desc_piloting']          = request()->deskripsi_pilot;
-            $data_new['desc_roll_out']          = request()->deskripsi_rollout;
-            $data_new['desc_sosialisasi']       = request()->deskripsi_sosialisasi;
-            $data_new['project_id']             = $project_id;
-            $data_new['user_checker']           = $dataChecker->personal_number;
-            $data_new['user_signer']            = $dataSigner->personal_number;
-            $data_new['updated_by']             = Auth::User()->personal_number;
-
-            $upd->update($data_new);
-
-            if (request()->piloting == 1) {
-                $tampung_attach_pilot = request()->attach_pilot;
-                /* if (isset($tampung_attach_pilot)) {
-                    AttachFile::whereNotIn('url_file', $tampung_attach_pilot)->where('implementation_id', $id)->delete();
-                } */
-
-                if (isset($tampung_attach_pilot)) {
-                    for ($i = 0; $i < count($tampung_attach_pilot); $i++) {
-                        $cek = TempUpload::where('path', $tampung_attach_pilot[$i])->first();
-                        if ($cek) {
-                            $attach['implementation_id']       = $id;
-                            $attach['tipe']                    = 'piloting';
-                            $attach['nama']                    = $cek->nama_file;
-                            $attach['jenis_file']              = $cek->type;
-                            $attach['url_file']                = $cek->path;
-                            $attach['size']                    = $cek->size;
-                            AttachFile::create($attach);
-
-                            $cek->delete();
-                        }
-                    }
-                }
-            }
-
-            if (request()->rollout == 1) {
-                $tampung_attach_rollout     =   request()->attach_rollout;
-                /* if (isset($tampung_attach_rollout)) {
-                    AttachFile::whereNotIn('url_file', $tampung_attach_rollout)->where('implementation_id', $id)->delete();
-                }*/
-                if (isset($tampung_attach_rollout)) {
-                    for ($i = 0; $i < count($tampung_attach_rollout); $i++) {
-                        $cek = TempUpload::where('path', $tampung_attach_rollout[$i])->first();
-                        if ($cek) {
-                            $attach['implementation_id']       = $id;
-                            $attach['tipe']                    = 'rollout';
                             $attach['nama']                    = $cek->nama_file;
                             $attach['jenis_file']              = $cek->type;
                             $attach['url_file']                = $cek->path;
@@ -1204,6 +1248,25 @@ class ManageComSupport extends Controller
                 }
             }
         }
+
+        // buat user
+        // $Notifikasi         = notifikasi::create([
+        //     'user_id'      =>  $cek->user_maker,
+        //     'kategori'     =>  1,
+        //     'judul'        =>  'Proyek Implementation Sedang Dicheck',
+        //     'pesan'        =>  "Proyek Implementation Anda Dengan Judul <b>".$cek->title."</b> Akan Di <b class='text-info'>Check</b> Oleh <b>".$cek->user_checker->name."</b>",
+        //     'direct'       =>  config('app.FE_url')."myimplementation",
+        //     'status'       =>  0,
+        // ]);
+        // buat checker
+        // $Notifikasi   = notifikasi::create([
+        //     'user_id'      =>  $cek->user_checker,
+        //     'kategori'     =>  1,
+        //     'judul'        =>  'Proyek Implementation Baru Diminta Melakukan Pengecheckan',
+        //     'pesan'        =>  "Terdapat data proyek implementation <b>".$cek->title."</b> yang membutuhkan Approval Anda",
+        //     'direct'       =>  config('app.FE_url')."myimplementation",
+        //     'status'       =>  0,
+        // ]);
 
         $temp = TempUpload::where('path', request()->thumbnail)->first();
         if ($temp) {

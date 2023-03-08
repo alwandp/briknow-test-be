@@ -254,7 +254,7 @@ class KontribusiController extends Controller
             ], 400);
         }
 
-        try {
+        // try {
             // --------------------------
             // cek akun checker
             $cekChecker =   User::where('personal_number',(int)request()->checker)->first();
@@ -456,14 +456,14 @@ class KontribusiController extends Controller
                 "status"    =>  1,
                 "data"      => $data
             ],200);
-        } catch (\Throwable $th) {
-            $data['message']    =   'Create Data Gagal, Mohon Coba Lagi';
-            $data['error_code'] = 0; //error
-            return response()->json([
-                'status'    =>  0,
-                'data'      =>  $data
-            ],200);
-        }
+        // } catch (\Throwable $th) {
+        //     $data['message']    =   'Create Data Gagal, Mohon Coba Lagi';
+        //     $data['error_code'] = 0; //error
+        //     return response()->json([
+        //         'status'    =>  0,
+        //         'data'      =>  $data
+        //     ],200);
+        // }
     }
 
     public function prepare_form()
@@ -584,7 +584,7 @@ class KontribusiController extends Controller
             'keyword'       => 'required',
             'restricted'    => 'required',
             'user'          => 'required',
-            'attach'        => 'required',
+            'attach'        => 'mimes:txt',
             'checker'       => 'required',
             'signer'        => 'required',
             'token_bri'     => "required",
@@ -733,7 +733,7 @@ class KontribusiController extends Controller
 
             $data_baru['divisi_id']           = request()->divisi;
             $data_baru['project_managers_id'] = $cek_pm->id;
-            $data_baru['nama']                = request()->nama_project;
+            $data_baru['nama']                = htmlspecialchars(strip_tags(request()->nama_project));
             $data_baru['slug']                = $waktu."".\Str::slug(request()->nama_project);
             $data_baru['thumbnail']           = request()->photo;
             $data_baru['deskripsi']           = request()->deskripsi;

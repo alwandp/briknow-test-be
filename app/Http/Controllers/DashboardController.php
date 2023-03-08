@@ -374,7 +374,7 @@ class DashboardController extends Controller
             "video"             => "Video Content",
             "instagram"         => "Instagram Content"];
 
-        $types = CommunicationSupport::select(DB::raw('type_file, SUM(views) as total'))->groupBy('type_file')
+        $types = CommunicationSupport::select(DB::raw('type_file, SUM(views) as total'))->where('status', '=', 'publish')->groupBy('type_file')
             ->orderby('total','desc')->get();
         $data = [];
         foreach($types as $key => $value){
@@ -411,11 +411,14 @@ class DashboardController extends Controller
             "transformation"    => "Transformation Journey",
             "podcast"           => "Podcast",
             "video"             => "Video Content",
-            "instagram"         => "Instagram Content"];
-        $project = Project::whereHas('communication_support')
-            ->without(['project_managers', 'divisi', 'keywords', 'consultant', 'lesson_learned', 'comment',
-                'usermaker', 'userchecker', 'usersigner', 'communication_support', 'implementation'])
-            ->select('id', 'nama', 'thumbnail', 'slug')->get();
+            "instagram"         => "Instagram Content"
+        ];
+        $publish = function ($q) {
+            $q->Where('status', 'publish');
+        };
+        $project = Project::whereHas('communication_support', $publish)->without(['project_managers', 'divisi', 'keywords', 'consultant', 'lesson_learned', 'comment',
+        'usermaker', 'userchecker', 'usersigner', 'communication_support', 'implementation'])
+        ->select('id', 'nama', 'thumbnail', 'slug')->get();
 
         $data = [];
         foreach ($project as $keys=>$values) {
@@ -424,9 +427,15 @@ class DashboardController extends Controller
                 ->groupBy('type_file')
                 ->orderby('total','desc')->get();
 
+            // $steps = Implementation::select(DB::raw('desc_piloting, desc_roll_out, desc_sosialisasi, views'))
+            //     ->where('project_id', $values->id)
+            //     ->where('status', 'publish')
+            //     ->orderby('views','desc')->get();
+
             $search_total = 0;
             $rowspan = 0;
             $strategic = [];
+
             foreach($types as $key => $value){
                 $sum = CommunicationSupport::without(['attach_file', 'project'])->where('project_id', $values->id)
                     ->where('type_file', $value->type_file)->where('status', '=', 'publish')
@@ -449,6 +458,29 @@ class DashboardController extends Controller
                 $search_total += $sum->total;
                 $rowspan += count($views);
             }
+
+            // foreach($steps as $key => $value){
+            //     $sum = Implementation::without(['attach_file', 'project'])->where('project_id', $values->id)
+            //         ->where('type_file', $value->type_file)->where('status', '=', 'publish')
+            //         ->select(DB::raw('SUM(views) as total'))->first();
+            //     $views = Implementation::without(['attach_file', 'project'])->where('project_id', $values->id)
+            //         ->select(DB::raw('id, title, views, thumbnail, slug'))
+            //         ->where('type_file', $value->type_file)->where('status', '=', 'publish')
+            //         ->orderby('views','desc')->take(5)->get();
+            //     $download = CommunicationSupport::without(['attach_file', 'project'])->where('project_id', $values->id)
+            //         ->select(DB::raw('id, title, downloads, thumbnail, slug'))
+            //         ->where('type_file', $value->type_file)->where('status', '=', 'publish')
+            //         ->orderby('downloads','desc')->take(5)->get();
+
+            //     $strategic[$key]['tipe']             = $value->type_file;
+            //     $strategic[$key]['tipe_nama']        = $type_list[$value->type_file];
+            //     $strategic[$key]['views_most']       = $views;
+            //     $strategic[$key]['downloads_most']   = $download;
+            //     $strategic[$key]['search']           = $sum->total;
+
+            //     $search_total += $sum->total;
+            //     $rowspan += count($views);
+            // }
 
             $data[$keys]['id'] = $values->id;
             $data[$keys]['nama'] = $values->nama;

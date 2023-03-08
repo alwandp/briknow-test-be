@@ -20,9 +20,15 @@ class LessonLearnedController extends Controller
         }
         if (isset($request->tahap)){
             $tahp = $request->tahap;
-            $query = $lessonLearn->whereHas('lesson_learned', function ($q) use ($tahp) {
-                $q->where('tahap', '=', $tahp);
-            });
+            if ($tahp !== 0) {
+                $query = $lessonLearn->whereHas('lesson_learned', function ($q) use ($tahp) {
+                    $q->where('tahap', '=', $tahp);
+                });
+            } else {
+                $query = $lessonLearn->whereHas('lesson_learned', function ($q) use ($tahp) {
+                    $q->where('tahap', '=', 0);
+                });
+            }
         }
         if (isset($request->direktorat)){
             $dir = $request->direktorat;

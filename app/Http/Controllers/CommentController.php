@@ -17,7 +17,7 @@ class CommentController extends Controller
     public function create()
     {
         $validator = Validator::make(request()->all(), [
-            'komentar'      => "required",
+            'komentar'      => 'required',
             'parent_form'   => 'nullable|numeric',
             'project_form'  => 'required|numeric',
             'reply_form'    => 'nullable|numeric',
@@ -57,7 +57,7 @@ class CommentController extends Controller
             $add['project_id']          =   mb_strtolower(request()->project_form);
             $add['user_id']             =   Auth::user()->personal_number;
             $add['replyto_user_id']     =   request()->reply_form;
-            $add['comment']             =   (string)request()->komentar;
+            $add['comment']             =   htmlspecialchars(strip_tags((string)request()->komentar));
             $comment = Comment::create($add);
 
             // notifikasi

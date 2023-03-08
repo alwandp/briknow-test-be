@@ -124,9 +124,13 @@ class MyLessonLearnedController extends Controller
         }
         if (isset($request->tahap)){
             $tahp = $request->tahap;
-            $query = $lessonLearn->whereHas('lesson_learned', function ($q) use ($tahp) {
-                $q->where('tahap', '=', $tahp);
-            });
+            if ($tahp !== "all") {
+                $query = $lessonLearn->whereHas('lesson_learned', function ($q) use ($tahp) {
+                    $q->where('tahap', '=', $tahp);
+                });
+            } else {
+                $query = $lessonLearn->whereHas('lesson_learned');
+            }
         }
         if (isset($request->direktorat)){
             $dir = $request->direktorat;
